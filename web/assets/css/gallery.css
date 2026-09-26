@@ -291,6 +291,12 @@ kbd { font-family: var(--font-mono); font-size: 12px; padding: 2px 6px; border: 
 .pswp__button--close, .pswp__button.viewer-btn { width: 40px !important; height: 40px !important; margin: 0 4px; border-radius: 999px; background: var(--glass) !important; display: grid !important; place-items: center; }
 .pswp__button--close .pswp__icn { position: static; width: 24px; height: 24px; }
 .pswp__counter { position: absolute; left: 50%; transform: translateX(-50%); margin: 0; top: 20px; height: auto; padding: 6px 12px; border-radius: 999px; background: var(--glass); font-size: 13px; line-height: 20px; opacity: 1; }
+/* 모바일: 위쪽 막대가 버튼으로 차므로 위치 표시는 사진 아래 여백으로 옮긴다. 슬라이드쇼 안내가 뜨면 그 자리를 비켜 준다. */
+@media (max-width: 767px) {
+  .pswp__counter { position: fixed; top: auto; bottom: max(16px, env(safe-area-inset-bottom)); }
+  .pswp.is-playing .pswp__counter { display: none; }
+  .viewer-slide-status { bottom: max(16px, env(safe-area-inset-bottom)); max-width: calc(100vw - 32px); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+}
 .pswp__button--zoom { display: none !important; }
 .pswp__button--arrow .pswp__icn { border-radius: 999px; background: var(--glass); padding: 12px; width: 48px; height: 48px; top: calc(50% - 24px); }
 .pswp__button--arrow--prev .pswp__icn { left: 16px; }

@@ -51,6 +51,8 @@ export function openViewer(config) {
     errorMsg: 'Could not load this photo.',
     indexIndicatorSep: ' / ',
     counter: true,
+    // 위쪽 조작 막대(닫기·위치·버튼)와 아래쪽 안내 줄 영역에는 사진을 두지 않는다.
+    paddingFn: (viewport) => ({ top: 72, bottom: viewport.x < 768 ? 64 : 56, left: 0, right: 0 }),
     clickToCloseNonZoomable: false,
     imageClickAction: 'zoom',
     tapAction: 'toggle-controls',
@@ -92,6 +94,7 @@ export function openViewer(config) {
     playing = false;
     clearInterval(slideshowTimer);
     status.hidden = true;
+    pswp?.element?.classList.remove('is-playing');
     restartProgress();
     updateButtons();
   }
@@ -103,6 +106,7 @@ export function openViewer(config) {
       pswp.next();
     }, slideshow.interval * 1000);
     status.hidden = false;
+    pswp?.element?.classList.add('is-playing');
     status.textContent = `Slideshow playing · every ${slideshow.interval} s · Space to pause`;
     restartProgress();
     updateButtons();
