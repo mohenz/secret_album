@@ -77,6 +77,8 @@ class GalleryLiveTests(unittest.TestCase):
         self.assertEqual((album["photo_count"], album["cover"]["id"]), (3, photos["items"][0]["id"]))
         status, home = self.owner.json("GET", "/home")
         self.assertEqual(home["hero"]["id"], self.album_id)
+        self.assertIsNotNone(home["pause_photo"], "즐겨찾기가 없어도 쉼표 사진이 있어야 한다")
+        self.assertNotEqual(home["pause_photo"]["id"], home["hero"]["cover"]["id"])
         status, models = self.owner.json("GET", "/models")
         self.assertEqual(models["items"][0]["photo_count"], 3)
         ids = [p["id"] for p in photos["items"]]

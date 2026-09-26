@@ -182,6 +182,19 @@ def home(cursor, actor) -> dict:
         {**params, "actor_id": actor.user_id},
     )
     pause = cursor.fetchone()
+    if pause is None:
+        # 즐겨찾기가 없으면 히어로 커버가 아닌 가장 최근 사진을 쉼표 사진으로 쓴다.
+        cursor.execute(
+            f"""
+            SELECT {PHOTO_CARD_COLUMNS} FROM photos p JOIN albums a ON a.id = p.album_id
+            LEFT JOIN favorites f ON f.photo_id = p.id AND f.user_id = %(actor_id)s
+            WHERE p.status = 'ready' AND p.deleted_at IS NULL AND a.deleted_at IS NULL AND {visible}
+              AND p.id IS DISTINCT FROM %(hero_cover)s
+            ORDER BY p.is_pause DESC, p.created_at DESC LIMIT 1
+            """,
+            {**params, "actor_id": actor.user_id, "hero_cover": hero["cover"]["id"] if hero and hero["cover"] else None},
+        )
+        pause = cursor.fetchone()
     return {
         "hero": hero,
         "recent_albums": [album for album in albums if album is not hero][:8],

@@ -41,7 +41,8 @@ async function load() {
           button('Add model', { variant: 'btn-primary', iconName: 'plus', onclick: async () => { if (await modelForm(null)) load(); } }),
           button('Create album', { variant: 'btn-outline', onclick: async () => { const r = await albumForm(null); if (r) location.href = `/pages/album.html?id=${r.id}`; } })) : null)));
   }
-  const albums = data.recent_albums;
+  // 히어로 앨범도 앨범 영역에 포함한다 (앨범이 하나뿐이어도 영역이 보이도록).
+  const albums = [data.hero, ...data.recent_albums].filter(Boolean);
   if (albums.length) {
     const [first, second, third, fourth] = albums;
     blocks.push(el('section', { class: 'home-section', 'aria-labelledby': 'albums-title' },
