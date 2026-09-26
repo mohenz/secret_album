@@ -8,14 +8,13 @@
 
 ## 실행
 
-Python 3.14 전용 가상환경이 필요합니다.
-
 ```powershell
 py -3.14 -m venv .venv
-.\.venv\Scripts\Activate.ps1
-python -m pip install -r requirements.txt
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
 .\sa.cmd
 ```
+
+개발·실행 기준은 Python 3.14입니다. 실행 스크립트는 `.venv`가 Python 3.14인지 검사합니다.
 
 - 웹: `http://127.0.0.1:8090`
 - API 상태: `http://127.0.0.1:3051/health`
@@ -28,9 +27,9 @@ python -m pip install -r requirements.txt
 가상환경을 활성화한 상태에서 실행합니다.
 
 ```powershell
-python -m compileall -q scripts tests
-python scripts\check_module_layers.py
-python -m unittest discover -s tests -t .
+.\.venv\Scripts\python.exe -m compileall -q scripts tests
+.\.venv\Scripts\python.exe scripts\check_module_layers.py
+.\.venv\Scripts\python.exe -m unittest discover -s tests -t .
 ```
 
 설계 기준은 `docs/project_settings.md`, `docs/design_request.md`, `docs/system_design.md`입니다.
