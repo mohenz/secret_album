@@ -31,7 +31,7 @@ async function load() {
       // 사진 전체를 보여 주고(잘라 내지 않음), 남는 여백은 같은 사진을 흐리게 깔아 채운다.
       el('div', { class: 'hero-backdrop', 'aria-hidden': 'true' }, photoFrame(hero.cover.id, { color: hero.cover.color, variant: 'thumb', alt: '' })),
       el('a', { class: 'photo-link', href: `/pages/album.html?id=${hero.id}`, tabindex: '-1', 'aria-hidden': 'true' },
-        photoFrame(hero.cover.id, { color: hero.cover.color, photo: { id: hero.cover.id, w: hero.cover.w, h: hero.cover.h }, sizes: '100vw', variant: 'large', eager: true })),
+        photoFrame(hero.cover.id, { color: hero.cover.color, photo: { id: hero.cover.id, w: hero.cover.w, h: hero.cover.h }, sizes: '(min-width: 1024px) 50vw, 100vw', variant: 'large', eager: true })),
       el('div', { class: 'hero-caption' },
         el('h1', { class: 'display-title', id: 'hero-title' }, hero.title),
         el('a', { class: 'hero-go', href: `/pages/album.html?id=${hero.id}`, 'aria-label': `View album ${hero.title}` }, icon('arrow-right', 'icon-20'))),

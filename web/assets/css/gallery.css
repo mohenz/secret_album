@@ -32,8 +32,8 @@ main.page { min-height: 100vh; }
 .photo-link:focus-visible { outline-offset: -4px; box-shadow: inset 0 0 0 4px var(--ring); }
 
 /* ------------------------------------------------ 홈 히어로 */
-.hero { position: relative; height: 100vh; height: 100svh; min-height: 480px; color: var(--viewer-foreground); background: var(--viewer-background); }
-@media (min-width: 1024px) { .hero { height: 85vh; } }
+.hero { position: relative; height: 50vh; height: 50svh; min-height: 300px; color: var(--viewer-foreground); background: var(--viewer-background); }
+@media (min-width: 1024px) { .hero { height: 42.5vh; } } /* 사용자 요청: 기존(모바일 100svh, 데스크톱 85vh)의 50% */
 .hero { overflow: hidden; }
 .hero .photo-frame { position: absolute; inset: 0; background: transparent; }
 .hero .photo-link .photo-frame img { object-fit: contain; }
