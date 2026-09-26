@@ -28,3 +28,5 @@ python -m unittest discover -s tests -t .
 ```
 
 설계 기준은 `docs/project_settings.md`, `docs/design_request.md`, `docs/system_design.md`입니다.
+
+다른 PC에서 개발을 이어갈 때는 `docs/other_pc_setup_guide.md`를 따릅니다.
