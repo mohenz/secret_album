@@ -20,12 +20,12 @@
 
 | 항목 | 값 |
 |---|---|
-| 레지스트리 | `project_control/project_registry.md` 38행 |
+| 레지스트리 | `project_control/project_registry.md`의 `secret_album` 항목 |
 | 별칭 | `secret_album`, `secret album`, `secret-album`, `비밀앨범`, `비밀 앨범`, `secrete_album`·`secrete album`(이전 이름) |
 | 상태 파일 | `project_control/states/secret_album_current.md` |
 | 커밋 | project_control 저장소에 커밋하지 않음 |
 
-> 2026-09-26 폴더명 변경에 맞춰 레지스트리 항목과 상태 파일(`secrete_album_current.md` → `secret_album_current.md`)을 현재 설정(갤러리형 v0.2, cinetube 동일 아키텍처)으로 갱신했다.
+> 2026-09-26 폴더명 변경에 맞춰 레지스트리와 상태 파일을 갤러리형 v0.2, cinetube 계열 아키텍처 및 실제 개발 경로 기준으로 갱신했다.
 
 ## 3. 문서
 
@@ -35,8 +35,8 @@
 | `docs/system_design.md` | 시스템 설계서 v0.2 — cinetube와 동일한 아키텍처 | 초안, 결정 대기 |
 | `docs/project_settings.md` | 이 문서 | — |
 | `design/design_request.md` | `docs/design_request.md` v0.2와 같은 내용의 사본 | — |
-| `design/nocturne_monograph/DESIGN.md` | 외부 디자인 시안의 디자인 시스템 정의 (다크 계열 자체 팔레트) | 미검토 |
-| `design/_1` ~ `design/_8`, `design/stitch_personal_gallery_album_web_app(.zip)` | 외부 디자인 시안 8화면 (`code.html` + `screen.png`) | 미검토 |
+| `design/nocturne_monograph/DESIGN.md` | 외부 디자인 시안의 디자인 시스템 정의 (다크 계열 자체 팔레트) | 1차 검토 완료 |
+| `design/_1` ~ `design/_8`, `design/stitch_personal_gallery_album_web_app(.zip)` | 외부 디자인 시안 8화면 (`code.html` + `screen.png`) | 1차 검토 완료 (`docs/design_review.md`) |
 | `design_request.md` (루트) | Bloom UI 디자인 표준·설계 프로세스 원문 사본 | 사용자 정리 예정 |
 
 ## 4. 디자인 설정
@@ -158,11 +158,12 @@ git push gitea main
 | 2026-09-26 | 사용자 지시로 시스템 설계서 v0.2 작성 — cinetube와 동일한 아키텍처 |
 | 2026-09-26 | 이 설정 문서 작성 |
 | 2026-09-26 | 폴더명 `secret_album`으로 변경(사용자), GitHub `mohenz/secret_album` 최초 배포(커밋 `949b84e`), 문서·레지스트리·상태 파일 경로 갱신 |
+| 2026-09-26 | `secret_album` 중앙 등록, 0단계 기반 구현과 전용 PostgreSQL 초기 스키마 완료 |
 
 ## 11. 다음 작업
 
 1. 9장 결정 대기 항목 확정
 2. `design/` 외부 시안 8화면을 디자인 요청서 v0.2·Bloom 표준 기준으로 검토
-3. 포트를 `development_systems.csv`에 등록
-4. `.gitignore` 작성(`local/` 포함), Gitea 저장소 생성, GitHub 저장소 공개 여부 결정
-5. 시스템 설계서 14장 0단계(기반) 구현 착수
+3. ~~`project_control` 레지스트리·상태 파일 갱신 및 포트 등록~~ (완료)
+4. GitHub 공개 저장소 유지 여부 결정, 필요 시 비공개 전환 또는 Gitea 저장소 생성
+5. ~~시스템 설계서 14장 0단계 기반 구현~~ (완료) → 1단계 인증 구현

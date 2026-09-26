@@ -1,0 +1,15 @@
+:root {
+  color-scheme: dark;
+  --surface-base: #09090b;
+  --surface-elevated: #121215;
+  --surface-hover: #18181b;
+  --viewer-background: #000;
+  --foreground: #f4f4f5;
+  --muted-foreground: #a1a1aa;
+  --faint-foreground: #52525b;
+  --primary: #3b82f6;
+  --border-hairline: rgb(255 255 255 / 8%);
+  --scrim-bottom: linear-gradient(180deg, transparent 0%, rgb(0 0 0 / 82%) 100%);
+  --radius-control: 10px;
+}
+

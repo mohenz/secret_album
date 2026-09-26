@@ -1,0 +1,10 @@
+__pycache__/
+*.py[cod]
+.venv/
+local/*
+!local/schema.sql
+!local/migrations/
+!local/migrations/.gitkeep
+.pytest_cache/
+playwright-report/
+test-results/
