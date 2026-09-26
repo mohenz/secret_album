@@ -18,48 +18,41 @@
 
 ## 2. 최초 서버 구성
 
-관리자 PowerShell에서 실행한다.
+Gitea 저장소 `admin/secret_album`(비공개)은 개발 PC에서 만들어 두었다. 서버의 **관리자 PowerShell**에서 두 줄만 실행한다.
 
 ```powershell
-# 1) 코드 받기 (Gitea 저장소를 쓰는 경우)
 git clone http://192.168.0.2:3000/admin/secret_album.git E:\workspace\secret_album
-Set-Location E:\workspace\secret_album
-
-# 2) Python 3.14 가상환경
-py -3.14 -m venv .venv
-.\.venv\Scripts\python.exe -m pip install -r requirements.txt
-
-# 3) DB 초기화 (local\album.env에 DB 비밀번호·암호화 키가 자동 생성된다)
-powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\start_local_db.ps1
+powershell -NoProfile -ExecutionPolicy Bypass -File E:\workspace\secret_album\deploy\server_setup.ps1
 ```
 
-`local\album.env`를 열어 내부망 접속용 값을 추가한다 (서버 IP가 192.168.0.2인 예):
+`deploy\server_setup.ps1`이 하는 일 (다시 실행해도 된 단계는 건너뛴다):
 
-```text
-ALBUM_API_HOST=0.0.0.0
-ALBUM_WEB_BIND=0.0.0.0
-ALBUM_WEB_ORIGINS=http://192.168.0.2:8090,http://localhost:8090,http://127.0.0.1:8090
-```
+1. 사전 확인: 관리자 권한, Git, PostgreSQL 18(`C:\Program Files\PostgreSQL8in`), Python 3.14(없으면 winget 설치), 포트 8090·3051·54328
+2. `.venv`와 패키지 설치
+3. 전용 PostgreSQL 클러스터·DB 생성(`locallbum.env` 자동 생성)과 내부망 접속 값(`ALBUM_API_HOST`, `ALBUM_WEB_BIND`, `ALBUM_WEB_ORIGINS`) 추가
+4. 개발 PC 데이터 이전: Gitea 비공개 초안 릴리스 `data-migration`의 zip(DB 덤프 + 원본 사진)을 받아 복원하고 화면용 이미지 재생성을 등록한다. 로그인 계정·비밀번호는 개발 PC와 같다.
+5. 방화벽(같은 서브넷만), Gitea 저장소 `hooks\post-receive.d\secret-album` 배포 훅, 감시 예약 작업(실행 계정 암호를 묻는다)
+6. `/ready` 200, 화면 200, 로그인 없이 `/albums` 401, `/local/album.env` 404 확인
 
-- 사진 디스크를 따로 쓰면 `ALBUM_MEDIA_ROOT=F:\secret_album_media`를 추가한다.
+선택 인자:
 
-```powershell
-# 4) 소유자 계정 만들기 (웹 가입 화면 없음)
-.\.venv\Scripts\python.exe scripts\admin_create.py
+| 인자 | 용도 |
+|---|---|
+| `-ServiceUser "SERVERlbumsvc"` | 감시 예약 작업 실행 계정 (기본: 현재 사용자) |
+| `-Bundle D:\secret_album_data_*.zip` | 이전 zip을 직접 지정 (USB 등으로 옮긴 경우) |
+| `-NoData` | 데이터 없이 새로 시작하고 소유자 계정을 만든다 |
+| `-GiteaRepoRoot <gitea-repositories 경로>` | Gitea 저장소 폴더 자동 탐색이 실패할 때 |
 
-# 5) 방화벽: 8090·3051을 같은 서브넷에만 연다
-.\deploy\configure_firewall.ps1
+- 이전이 끝나면 Gitea 초안 릴리스 `data-migration`(개인 사진 포함)을 지운다.
+- 이전 뒤에는 서버에서만 사진을 올린다. 개발 PC DB와 서버 DB는 동기화되지 않는다.
+- 사진 디스크를 따로 쓰려면 실행 전에 `locallbum.env`에 `ALBUM_MEDIA_ROOT=F:\secret_album_media`를 넣는다.
 
-# 6) 감시 예약 작업 등록 (부팅 시 + 1분마다 자기 복구)
-.\scripts\register_supervisor.ps1 -User "SERVER\albumsvc"
-```
-
-접속: `http://192.168.0.2:8090` → 아이디·비밀번호로 로그인.
+접속: `http://192.168.0.2:8090`
 
 ## 3. 배포 (Gitea push)
 
-1. Gitea 저장소 `admin/secret_album`의 `hooks/post-receive`에 `deploy/post-receive`를 복사한다 (줄바꿈 LF 유지). 운영 경로가 다르면 파일 안의 `DEPLOY_ROOT`를 고친다.
-2. 개발 PC에서 검증 후 push한다.
+1. 배포 훅은 `server_setup.ps1`이 설치한다 (`hooks/post-receive.d/secret-album`, LF).
+2. 개발 PC에서 검증 후 push한다. 개발 PC에는 `gitea` 원격이 등록되어 있다.
 
 ```powershell
 .\.venv\Scripts\python.exe scripts\check_module_layers.py
