@@ -1,0 +1,13 @@
+#!/bin/sh
+# Gitea 저장소의 hooks/post-receive(또는 hooks/post-receive.d/secret-album)로 복사한다.
+# main 브랜치에 push되면 운영 작업 트리를 갱신하고 배포한다. 결과는 push 콘솔과 local/deploy.log에 남는다.
+# 운영 경로가 다르면 DEPLOY_ROOT를 바꾼다.
+DEPLOY_ROOT="E:/workspace/secret_album"
+GIT_DIR_PATH="$(pwd)"
+while read -r oldrev newrev refname; do
+  if [ "$refname" = "refs/heads/main" ]; then
+    echo "[SecretAlbum] main push detected, deploying to $DEPLOY_ROOT"
+    powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$DEPLOY_ROOT/deploy/deploy.ps1" -GitDir "$GIT_DIR_PATH" -Branch main
+    echo "[SecretAlbum] deploy exit code: $?"
+  fi
+done

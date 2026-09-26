@@ -57,7 +57,16 @@ def main() -> None:
     signal.signal(signal.SIGINT, stop)
     signal.signal(signal.SIGTERM, stop)
 
-    recovered = jobs.recover_stale(args.recover_stale)
+    # DB가 아직 준비되지 않았으면 기다린다 (서버 부팅 직후 등). 종료 신호를 받으면 멈춘다.
+    while not STOP.is_set():
+        try:
+            recovered = jobs.recover_stale(args.recover_stale)
+            break
+        except Exception as exc:
+            logger.warning("database not ready, retrying in 5s: %s", exc)
+            STOP.wait(5)
+    else:
+        return
     if recovered:
         logger.warning("recovered %s stale jobs", recovered)
     logger.info("비밀앨범 Worker 시작 id=%s concurrency=%s", worker_id, args.concurrency)

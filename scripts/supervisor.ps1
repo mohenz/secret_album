@@ -1,4 +1,4 @@
-# 비밀앨범 프로세스 감시. "SecretAlbum-Supervisor" 예약 작업이 실행한다 (register_supervisor.ps1).
+﻿# 비밀앨범 프로세스 감시. "SecretAlbum-Supervisor" 예약 작업이 실행한다 (register_supervisor.ps1).
 #
 # 왜 예약 작업인가: 배포 훅·에이전트 셸에서 Start-Process로 띄운 프로세스는 호출자의 작업 개체에 묶여
 # 호출자가 끝나면 함께 종료될 수 있다(cinetube에서 실제 발생). 예약 작업은 그런 묶임 밖에서 실행되므로,

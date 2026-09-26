@@ -1,7 +1,7 @@
 # 비밀앨범 프로젝트 설정
 
 - 기준일: 2026년 9월 26일
-- 단계: 기획·설계 (코드 없음)
+- 단계: 0~6단계 구현 완료 (2026-09-26). 결정 대기 항목은 제안값으로 잠정 적용
 - 이 문서는 지금까지 정한 프로젝트 설정을 한곳에 모은 요약이다. 세부 내용은 각 원본 문서가 우선한다.
 
 ## 1. 기본 정보
@@ -31,8 +31,10 @@
 
 | 파일 | 내용 | 상태 |
 |---|---|---|
-| `docs/design_request.md` | 디자인 작업 요청서 v0.2 — 갤러리형 감상 중심, 감상/관리 영역 분리, Bloom 표준 예외 E1~E6 | 초안, 결정 대기 |
-| `docs/system_design.md` | 시스템 설계서 v0.2 — cinetube와 동일한 아키텍처 | 초안, 결정 대기 |
+| `docs/design_request.md` | 디자인 작업 요청서 v0.2 — 갤러리형 감상 중심, 감상/관리 영역 분리, Bloom 표준 예외 E1~E7 | 구현 반영 |
+| `docs/system_design.md` | 시스템 설계서 v0.2 — cinetube와 동일한 아키텍처 | 구현 반영 |
+| `docs/operations_guide.md` | 운영 서버 구성·배포·백업·복원·장애 대응 | 신규 |
+| `docs/other_pc_setup_guide.md` | 다른 PC에서 개발 이어가기 | 갱신 |
 | `docs/project_settings.md` | 이 문서 | — |
 | `design/design_request.md` | `docs/design_request.md` v0.2와 같은 내용의 사본 | — |
 | `design/nocturne_monograph/DESIGN.md` | 외부 디자인 시안의 디자인 시스템 정의 (다크 계열 자체 팔레트) | 1차 검토 완료 |
@@ -61,6 +63,7 @@
 | E4 | 디스플레이 제목 32~64px |
 | E5 | 사진 위 글자용 하단 스크림 그라데이션 |
 | E6 | 사진 그리드 좌우 여백 0, 사진 간격 2~4px |
+| E7 | 사이트 UI 문구 영어, 날짜·숫자 `en-US` (사용자 지시) |
 | D2 | Radix UI 대신 네이티브 `<dialog>`·`popover` (Vanilla JS 구성 때문, 시스템 설계서 16장) |
 
 ## 5. 아키텍처 설정 (cinetube와 동일 구성)
@@ -109,7 +112,7 @@ ALBUM_DB_POOL_SIZE=8            ALBUM_WORKER_CONCURRENCY=3
 ALBUM_SLOW_REQUEST_MS=1000
 ```
 
-## 8. 실행·검증·배포 명령 (구현 후 사용 예정)
+## 8. 실행·검증·배포 명령
 
 ```powershell
 # 실행 / 중지
@@ -120,9 +123,10 @@ ALBUM_SLOW_REQUEST_MS=1000
 # 검증
 .\.venv\Scripts\python.exe -m compileall -q scripts tests
 .\.venv\Scripts\python.exe scripts\check_module_layers.py
-.\.venv\Scripts\python.exe -m unittest discover -s tests -t .
+.\.venv\Scripts\python.exe -m unittest discover -s tests -t .      # 26개
+.\.venv\Scripts\python.exe tests\e2e\run_e2e.py                       # 화면 E2E 49개 (requirements-dev.txt)
 
-# 배포 (Gitea main push → 서버 post-receive 훅)
+# 배포 (Gitea main push → 서버 post-receive 훅 → deploy\deploy.ps1)
 git push gitea main
 ```
 
@@ -130,10 +134,11 @@ git push gitea main
 |---|---|
 | Gitea 저장소(제안) | `http://192.168.0.2:3000/admin/secret_album.git` (미생성) |
 | 배포 로그 | 서버 `local/deploy.log` |
-| 프로세스 유지 | `SecretAlbum-Supervisor` 예약 작업 (미등록) |
-| 백업 | DB 매일 03:00 `pg_dump` 30일 보관, 원본 사진 매일 03:30 `robocopy /MIR` |
+| 프로세스 유지 | `SecretAlbum-Supervisor` 예약 작업 (`scripts\register_supervisor.ps1`, 운영 서버에서 등록 필요) |
+| 백업 | `scripts\backup_album.ps1 -BackupRoot <백업 디스크>` 매일, DB 덤프 30일 보관 + 원본 `robocopy /MIR`. 복원 연습 `scripts\restore_album.ps1 -Verify` |
+| 방화벽 | `deploy\configure_firewall.ps1` (8090·3051을 같은 서브넷에만) |
 
-## 9. 결정 대기 항목
+## 9. 결정 대기 항목 (구현에는 제안값을 잠정 적용)
 
 | 번호 | 항목 | 제안 |
 |---|---|---|
@@ -161,11 +166,14 @@ git push gitea main
 | 2026-09-26 | 이 설정 문서 작성 |
 | 2026-09-26 | 폴더명 `secret_album`으로 변경(사용자), GitHub `mohenz/secret_album` 최초 배포(커밋 `949b84e`), 문서·레지스트리·상태 파일 경로 갱신 |
 | 2026-09-26 | `secret_album` 중앙 등록, 0단계 기반 구현과 전용 PostgreSQL 초기 스키마 완료 |
+| 2026-09-26 | Python 3.14 기준 통일(두 PC 작업 병합), DB 시작·Worker 종료 스크립트 결함 수정 |
+| 2026-09-26 | 1~6단계 구현: 인증·2단계 인증, 업로드·처리, 감상 화면·뷰어, 편집·휴지통·설정, 프라이버시 기능, 감시·백업·복원·배포·방화벽 스크립트. 통합 테스트 26개·E2E 49개 통과 |
+| 2026-09-26 | 사용자 지시로 사이트 UI 문구 전체를 영어로 전환 (표준 예외 E7) |
 
 ## 11. 다음 작업
 
-1. 9장 결정 대기 항목 확정
-2. `design/` 외부 시안 8화면을 디자인 요청서 v0.2·Bloom 표준 기준으로 검토
-3. ~~`project_control` 레지스트리·상태 파일 갱신 및 포트 등록~~ (완료)
-4. GitHub 공개 저장소 유지 여부 결정, 필요 시 비공개 전환 또는 Gitea 저장소 생성
-5. ~~시스템 설계서 14장 0단계 기반 구현~~ (완료) → 1단계 인증 구현
+1. 9장 결정 대기 항목 확정 (현재 제안값으로 동작)
+2. GitHub 공개 저장소 유지 여부 결정, 필요 시 비공개 전환 또는 Gitea 저장소 생성
+3. 운영 서버 구성: `docs/operations_guide.md` 2장 (Gitea 저장소·훅, 감시 작업, 방화벽, 백업 예약)
+4. HTTPS 적용 (D3)
+5. 열람자 관리 화면 (D6, 현재 데이터 모델과 권한 검사만 있음)

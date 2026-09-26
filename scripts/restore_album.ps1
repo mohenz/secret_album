@@ -1,4 +1,4 @@
-# 백업 복원.
+﻿# 백업 복원.
 #
 # 복원 연습 (운영 DB는 건드리지 않음): 덤프를 임시 DB에 복원하고 행 수를 확인한 뒤 지운다.
 #   .\scripts\restore_album.ps1 -Dump local\backups\secret_album_20260926_030000.dump -Verify

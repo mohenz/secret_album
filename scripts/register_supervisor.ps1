@@ -1,4 +1,4 @@
-# 운영 서버에서 관리자 PowerShell로 한 번 실행한다.
+﻿# 운영 서버에서 관리자 PowerShell로 한 번 실행한다.
 # 부팅 시 + 1분마다 supervisor.ps1을 실행하는 "SecretAlbum-Supervisor" 예약 작업을 만든다.
 #
 #   .\scripts\register_supervisor.ps1 -User "SERVER\albumsvc"   (서비스 전용 계정 권장, 암호를 묻는다)

@@ -212,7 +212,16 @@ Invoke-RestMethod http://127.0.0.1:3051/ready
 .\.venv\Scripts\python.exe -m unittest discover -s tests -t .
 ```
 
-가상환경을 활성화한 상태에서 실행한다. 현재 기준으로 단위 테스트 8개가 통과해야 한다(`tests/test_runtime.py`는 Python 3.14가 아니면 실패한다). 실패한 상태에서 기능 개발이나 원격 푸시를 진행하지 않는다.
+현재 기준으로 테스트 26개가 통과해야 한다(`tests/test_runtime.py`는 Python 3.14가 아니면 실패한다). DB가 켜져 있으면 통합 테스트(`test_auth_live.py`, `test_gallery_live.py`)가 `secret_album_test` DB를 새로 만들어 실행하고, DB가 꺼져 있으면 건너뛴다.
+
+화면을 바꿨다면 E2E도 실행한다(설치된 Chrome 사용, 49개 확인 항목, 스크린샷은 `local\e2e`):
+
+```powershell
+.\.venv\Scripts\python.exe -m pip install -r requirements-dev.txt
+.\.venv\Scripts\python.exe tests\e2e\run_e2e.py
+```
+
+실패한 상태에서 기능 개발이나 원격 푸시를 진행하지 않는다.
 
 ## 9. 다른 PC에서 작업을 이어가는 절차
 
@@ -240,18 +249,13 @@ git push origin main
 
 두 PC에서 동시에 같은 파일을 수정하지 않는다. 작업 시작 전 `git pull --ff-only`, 종료 후 `git push`를 원칙으로 한다. `local/` 데이터는 Git으로 동기화되지 않는다.
 
-## 10. 현재 다음 개발 작업
+## 10. 현재 상태
 
-현재 전체 공정률은 약 18%이며 0단계 기반 구축이 완료된 상태다. 다음은 1단계 인증 구현이다.
+2026-09-26 기준 시스템 설계서 14장의 0~6단계 구현을 마쳤다(인증, 업로드·처리, 감상 화면, 관리, 프라이버시·보안, 운영 스크립트). 사이트 화면 문구는 영어다(표준 예외 E7).
 
-1. `scripts/admin_create.py` 최초 소유자 생성
-2. Argon2id 비밀번호 검증
-3. 로그인 실패 잠금
-4. TOTP 2단계 인증과 복구 코드
-5. 세션 발급·유휴 만료·절대 만료
-6. `/auth/login`, `/auth/otp`, `/auth/me`, `/auth/logout`
-7. `web/login.html`과 잠금 화면
-8. 인증되지 않은 API와 사진 요청 차단
+새 PC에서 처음 로그인하려면 소유자 계정을 만든다: `.\.venv\Scripts\python.exe scripts\admin_create.py`
+
+운영 서버 구성·배포·백업은 `docs/operations_guide.md`를 따른다.
 
 설계 기준은 다음 문서를 우선한다.
 
@@ -259,6 +263,7 @@ git push origin main
 - `docs/system_design.md`
 - `docs/design_request.md`
 - `docs/design_review.md`
+- `docs/operations_guide.md`
 
 ## 11. 문제 해결
 

@@ -1,4 +1,4 @@
-# DB 덤프 + 원본 사진 백업. 운영 서버에서는 예약 작업으로 매일 실행한다.
+﻿# DB 덤프 + 원본 사진 백업. 운영 서버에서는 예약 작업으로 매일 실행한다.
 #
 #   .\scripts\backup_album.ps1                               DB 덤프만 local\backups에
 #   .\scripts\backup_album.ps1 -BackupRoot F:\album-backup   DB 덤프 + 원본 사진을 백업 디스크로

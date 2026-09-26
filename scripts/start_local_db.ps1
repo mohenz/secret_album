@@ -1,4 +1,4 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param()
 $ErrorActionPreference = 'Stop'
 $projectRoot = Split-Path -Parent $PSScriptRoot
@@ -22,6 +22,7 @@ if (-not (Test-Path -LiteralPath $envFile)) {
     $password = [Convert]::ToBase64String($bytes).Replace('+','A').Replace('/','B').TrimEnd('=')
     @('PGHOST=127.0.0.1',"PGPORT=$pgPort","PGUSER=$dbUser","PGPASSWORD=$password","PGDATABASE=$dbName",'ALBUM_API_HOST=127.0.0.1','ALBUM_API_PORT=3051','ALBUM_WEB_ORIGINS=http://localhost:8090,http://127.0.0.1:8090') | Set-Content -LiteralPath $envFile -Encoding utf8
 }
+$previousPassword = $env:PGPASSWORD
 $settings = @{}
 Get-Content -LiteralPath $envFile | ForEach-Object { if ($_ -match '^([^#=]+)=(.*)$') { $settings[$matches[1]]=$matches[2] } }
 if (-not $settings.ALBUM_DATA_KEY) {
@@ -77,5 +78,6 @@ foreach ($file in (Get-ChildItem -LiteralPath $migrationDir -Filter '*.sql' -Err
     if ($LASTEXITCODE -ne 0) { throw "마이그레이션 기록 실패: $($file.Name)" }
     Write-Output "MIGRATION_APPLIED $($file.Name)"
 }
-Remove-Item Env:PGPASSWORD -ErrorAction SilentlyContinue
+# 호출한 쪽(감시 스크립트 등)이 이미 읽어 둔 비밀번호를 지우지 않도록 원래 값으로 되돌린다.
+if ($null -ne $previousPassword) { $env:PGPASSWORD = $previousPassword } else { Remove-Item Env:PGPASSWORD -ErrorAction SilentlyContinue }
 Write-Output "DATABASE_READY host=127.0.0.1 port=$pgPort database=$dbName user=$dbUser"
