@@ -216,6 +216,8 @@ function render() {
   });
   setChildren(main,
     el('section', { class: 'album-cover', 'aria-labelledby': 'album-title' },
+      // 표지 사진 전체를 보여 주고(잘라 내지 않음), 남는 여백은 같은 사진을 흐리게 깔아 채운다.
+      cover ? el('div', { class: 'hero-backdrop', 'aria-hidden': 'true' }, photoFrame(cover.id, { color: album.cover.color, variant: 'thumb', alt: '' })) : null,
       cover ? photoFrame(cover.id, { color: album.cover.color, photo: cover, sizes: '100vw', variant: 'large', eager: true }) : null,
       el('div', { class: 'cover-top' },
         el('a', { class: 'back-link', href: '/pages/albums.html' }, icon('arrow-left'), 'All albums'),
