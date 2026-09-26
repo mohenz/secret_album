@@ -33,7 +33,7 @@ async function load() {
       el('a', { class: 'photo-link', href: `/pages/album.html?id=${hero.id}`, tabindex: '-1', 'aria-hidden': 'true' },
         photoFrame(hero.cover.id, { color: hero.cover.color, photo: { id: hero.cover.id, w: hero.cover.w, h: hero.cover.h }, sizes: '(min-width: 1024px) 50vw, 100vw', variant: 'large', eager: true })),
       el('div', { class: 'hero-caption' },
-        el('h1', { class: 'display-title', id: 'hero-title' }, hero.title),
+        el('h1', { class: 'visually-hidden', id: 'hero-title' }, hero.title), // 화면에는 제목을 표시하지 않는다(화면 낭독기용으로만 유지).
         el('a', { class: 'hero-go', href: `/pages/album.html?id=${hero.id}`, 'aria-label': `View album ${hero.title}` }, icon('arrow-right', 'icon-20'))),
       el('span', { class: 'scroll-cue', 'aria-hidden': 'true' }, icon('chevron-down', 'icon-20'))));
   } else {
