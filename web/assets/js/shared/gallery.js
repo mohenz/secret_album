@@ -106,7 +106,8 @@ export class PhotoFlow {
     const width = this.container.clientWidth;
     if (!width) return;
     const focusedId = document.activeElement?.closest?.('.flow-item')?.dataset.id;
-    const scale = this.options.density === 'compact' ? 0.6 : 1;
+    // rowScale: 화면별 행 높이 배율 (예: 즐겨찾기 0.5)
+    const scale = (this.options.density === 'compact' ? 0.6 : 1) * (this.options.rowScale || 1);
     this.rows = computeRows(this.items, width, Math.round(targetRowHeight(width) * scale), 2, innerHeight * 0.8);
     this.container.replaceChildren();
     this.rendered = 0;

@@ -11,7 +11,7 @@ const PAGE = 60;
 let sort = params.get('sort') || 'shot_desc';
 let offset = 0;
 
-const grid = el('div', { class: 'cover-grid', role: 'list' });
+const grid = el('div', { class: 'cover-grid compact', role: 'list' });
 const empty = el('div', { hidden: true });
 const more = button('Load more', { variant: 'btn-outline', onclick: () => loadMore() });
 const moreRow = el('div', { class: 'row-actions', hidden: true }, more);
@@ -41,7 +41,7 @@ async function loadMore() {
     if (offset === 0 && !data.items.length) {
       empty.replaceChildren(emptyState('images', 'No albums yet', isOwner() ? 'Create an album and upload photos.' : 'No albums have been shared with you yet.'));
     }
-    grid.append(...data.items.map((a) => { const card = albumCard(a); card.setAttribute('role', 'listitem'); return card; }));
+    grid.append(...data.items.map((a) => { const card = albumCard(a, { sizes: '(min-width: 1440px) 13vw, (min-width: 768px) 17vw, (min-width: 480px) 25vw, 33vw' }); card.setAttribute('role', 'listitem'); return card; }));
     empty.hidden = !(offset === 0 && !data.items.length);
     offset += data.items.length;
     count.textContent = plural(data.total, 'album');

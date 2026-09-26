@@ -22,6 +22,7 @@ async function load() {
     const flowNode = el('div', { 'aria-label': 'Favorite photos' });
     body.replaceChildren(flowNode);
     const flow = new PhotoFlow(flowNode, items, {
+      rowScale: 0.5, // 사용자 요청: 사진 크기 50%
       onOpen: (index) => openViewer({
         items, index, owner: me.user.role === 'owner', hideSeconds: me.settings.viewer_controls_hide_seconds,
         onClose: () => {

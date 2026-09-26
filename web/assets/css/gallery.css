@@ -326,3 +326,12 @@ kbd { font-family: var(--font-mono); font-size: 12px; padding: 2px 6px; border: 
 .viewer-info .tip-btn.tip-danger { margin-left: auto; color: var(--destructive); border-color: color-mix(in srgb, var(--destructive) 45%, transparent); }
 .viewer-info .tip-btn.tip-danger:hover { background: color-mix(in srgb, var(--destructive) 15%, transparent); }
 .viewer-info .tip-btn:focus-visible { outline: 2px solid var(--viewer-foreground); outline-offset: 2px; }
+
+/* 앨범 목록: 카드 크기 50% (열 수 2배, 모바일은 글자가 읽히도록 3~4열) */
+.cover-grid.compact { gap: 12px; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+@media (min-width: 480px) { .cover-grid.compact { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+@media (min-width: 768px) { .cover-grid.compact { grid-template-columns: repeat(6, minmax(0, 1fr)); } }
+@media (min-width: 1440px) { .cover-grid.compact { grid-template-columns: repeat(8, minmax(0, 1fr)); } }
+.cover-grid.compact .cover-text { padding: 6px 4px 8px; gap: 0; }
+.cover-grid.compact .cover-title { font-size: 13px; line-height: 18px; }
+.cover-grid.compact .cover-meta { font-size: 11px; line-height: 16px; }
