@@ -76,6 +76,7 @@ Docker·Node 빌드 도구는 쓰지 않는다. 서버에는 PostgreSQL과 Pytho
 
 | 영역 | 선택 | 비고 |
 |---|---|---|
+| 런타임 | Python 3.14.x | 프로젝트 `.venv`를 실행·테스트의 단일 기준으로 사용 |
 | 프론트엔드 | Vanilla HTML·CSS·JavaScript (ES 모듈, 빌드 단계 없음) | cinetube와 같음 |
 | 디자인 토큰 | Bloom 의미 토큰을 CSS 변수로 정의(`web/assets/css/tokens.css`), Light·Dark | shadcn neutral+blue 값을 가져와 매핑 |
 | 글꼴 | Pretendard Variable (로컬 파일 `web/assets/fonts/`) | 내부망 전용이라 외부 CDN을 쓰지 않음 |
@@ -204,7 +205,7 @@ cinetube는 로그인 없는 로컬 서비스이고 `local/media`를 정적 웹�
 
 | 항목 | 설계 |
 |---|---|
-| 계정 | 최초 소유자는 서버에서 `python scripts\admin_create.py`로 1회 생성. 웹 가입 화면 없음 |
+| 계정 | 최초 소유자는 서버에서 `.\.venv\Scripts\python.exe scripts\admin_create.py`로 1회 생성. 웹 가입 화면 없음 |
 | 비밀번호 | argon2id, 최소 10자 |
 | 2단계 인증 | TOTP 6자리. 복구 코드 10개(해시 저장). 필수 여부는 결정 D4 |
 | 로그인 실패 | 계정별 5회 실패 → 10분 잠금, IP별 분당 요청 제한. 오류 문구는 아이디 존재 여부를 드러내지 않음 |
@@ -399,9 +400,10 @@ ALBUM_SLOW_REQUEST_MS=1000
 
 ```powershell
 cd D:\workspace\secret_album
-python -m pip install --user -r requirements.txt   # 최초 1회
+& "$env:LOCALAPPDATA\Programs\Python\Python314\python.exe" -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
 .\sa                                                 # DB → API → Worker → 웹 기동, 브라우저 열기
-python scripts\admin_create.py                      # 최초 1회 소유자 계정 생성
+.\.venv\Scripts\python.exe scripts\admin_create.py # 최초 1회 소유자 계정 생성
 .\stop-album.cmd                                     # 전체 중지
 ```
 
@@ -410,9 +412,9 @@ python scripts\admin_create.py                      # 최초 1회 소유자 계�
 검증:
 
 ```powershell
-python -m compileall -q scripts tests
-python scripts\check_module_layers.py
-python -m unittest discover -s tests -t .
+.\.venv\Scripts\python.exe -m compileall -q scripts tests
+.\.venv\Scripts\python.exe scripts\check_module_layers.py
+.\.venv\Scripts\python.exe -m unittest discover -s tests -t .
 ```
 
 | 테스트 | 범위 |
@@ -439,8 +441,8 @@ python -m unittest discover -s tests -t .
 개발 PC에서:
 
 ```powershell
-python scripts\check_module_layers.py
-python -m unittest discover -s tests -t .
+.\.venv\Scripts\python.exe scripts\check_module_layers.py
+.\.venv\Scripts\python.exe -m unittest discover -s tests -t .
 git switch main
 git pull --ff-only gitea main
 git merge --ff-only <검토한 개발 브랜치>

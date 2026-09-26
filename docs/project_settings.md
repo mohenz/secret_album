@@ -75,6 +75,7 @@
 | 사진 뷰어 | PhotoSwipe 5 (로컬 복사본) |
 | 사진 격자 | 저스티파이드 레이아웃 직접 구현 |
 | Python 패키지 | `psycopg[binary]` 3.3.4, `Pillow` 12.1.1, `argon2-cffi`, `pyotp`, (HEIC 지원 시) `pillow-heif` |
+| Python 런타임 | Python 3.14.x, 프로젝트 `.venv` 필수 |
 | 테스트 | `unittest`, `check_module_layers.py`, Playwright(개발 PC) |
 
 ### 5.1 cinetube와 다르게 가져가는 점
@@ -113,12 +114,12 @@ ALBUM_SLOW_REQUEST_MS=1000
 # 실행 / 중지
 .\sa                     # DB → API → Worker → 웹 기동
 .\stop-album.cmd
-python scripts\admin_create.py   # 최초 소유자 계정 1회 생성
+.\.venv\Scripts\python.exe scripts\admin_create.py   # 최초 소유자 계정 1회 생성
 
 # 검증
-python -m compileall -q scripts tests
-python scripts\check_module_layers.py
-python -m unittest discover -s tests -t .
+.\.venv\Scripts\python.exe -m compileall -q scripts tests
+.\.venv\Scripts\python.exe scripts\check_module_layers.py
+.\.venv\Scripts\python.exe -m unittest discover -s tests -t .
 
 # 배포 (Gitea main push → 서버 post-receive 훅)
 git push gitea main

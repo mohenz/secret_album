@@ -7,7 +7,7 @@
 - 저장소: `https://github.com/mohenz/secret_album.git`
 - 브랜치: `main`
 - 개발 기준 경로: `D:\Workspace\secret_album`
-- Python: 3.12 계열
+- Python: 3.14 계열(현재 검증 버전 3.14.7)
 - PostgreSQL: 18, 전용 포트 `54328`
 - 웹: `http://127.0.0.1:8090`
 - API: `http://127.0.0.1:3051`
@@ -20,14 +20,14 @@
 다음 프로그램을 설치한다.
 
 1. Git for Windows
-2. Python 3.12 — 설치 시 `Add Python to PATH` 선택
+2. Python 3.14 — Python.org 공식 Windows 64비트 배포판
 3. PostgreSQL 18 — 기본 설치 경로 `C:\Program Files\PostgreSQL\18`
 
 확인:
 
 ```powershell
 git --version
-python --version
+& "$env:LOCALAPPDATA\Programs\Python\Python314\python.exe" --version
 & 'C:\Program Files\PostgreSQL\18\bin\psql.exe' --version
 ```
 
@@ -54,10 +54,10 @@ GitHub 인증이 필요하면 개인 액세스 토큰 또는 Git Credential Mana
 
 ```powershell
 Set-Location D:\Workspace\secret_album
-python -m venv .venv
+& "$env:LOCALAPPDATA\Programs\Python\Python314\python.exe" -m venv .venv
 .\.venv\Scripts\Activate.ps1
-python -m pip install --upgrade pip
-python -m pip install -r requirements.txt
+.\.venv\Scripts\python.exe -m pip install --upgrade pip
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
 ```
 
 PowerShell 실행 정책 때문에 활성화가 막히면 현재 프로세스에서만 허용한다.
@@ -204,9 +204,9 @@ Invoke-RestMethod http://127.0.0.1:3051/ready
 ## 8. 개발 시작 전 검증
 
 ```powershell
-python -m compileall -q scripts tests
-python scripts\check_module_layers.py
-python -m unittest discover -s tests -t .
+.\.venv\Scripts\python.exe -m compileall -q scripts tests
+.\.venv\Scripts\python.exe scripts\check_module_layers.py
+.\.venv\Scripts\python.exe -m unittest discover -s tests -t .
 ```
 
 현재 기준으로 단위 테스트 7개가 통과해야 한다. 실패한 상태에서 기능 개발이나 원격 푸시를 진행하지 않는다.
@@ -226,9 +226,9 @@ git pull --ff-only origin main
 작업 종료 전:
 
 ```powershell
-python -m compileall -q scripts tests
-python scripts\check_module_layers.py
-python -m unittest discover -s tests -t .
+.\.venv\Scripts\python.exe -m compileall -q scripts tests
+.\.venv\Scripts\python.exe scripts\check_module_layers.py
+.\.venv\Scripts\python.exe -m unittest discover -s tests -t .
 git status --short
 git add <변경한 파일>
 git commit -m "작업 내용"
@@ -300,4 +300,3 @@ Get-Content .\local\postgres.log -Tail 50
 - 사진 이전 매체는 BitLocker 등으로 암호화한다.
 - 복원 검증이 끝난 임시 덤프는 안전하게 삭제한다.
 - 실제 사진 사용 전 저장소 비공개 전환 또는 내부 Gitea 사용 여부를 결정한다.
-
