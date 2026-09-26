@@ -737,7 +737,7 @@ def library(cursor, actor, model_id: str | None = None, album_id: str | None = N
         params["album_id"] = parse_uuid(album_id, "album")
     query = " ".join((query or "").split())[:80]
     if query:
-        params["pattern"] = "%" + query.replace("\\", "\\\\").replace("%", "\%").replace("_", "\_") + "%"
+        params["pattern"] = "%" + query.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%"
         where.append(
             "(p.original_filename ILIKE %(pattern)s OR p.caption ILIKE %(pattern)s OR p.camera ILIKE %(pattern)s OR a.title ILIKE %(pattern)s"
             " OR EXISTS (SELECT 1 FROM photo_tags pt JOIN tags t ON t.id = pt.tag_id WHERE pt.photo_id = p.id AND t.name ILIKE %(pattern)s))"
