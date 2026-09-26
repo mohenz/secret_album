@@ -230,6 +230,15 @@ kbd { font-family: var(--font-mono); font-size: 12px; padding: 2px 6px; border: 
   .feature-side .feature-wide { grid-column: 1 / -1; }
 }
 @media (max-width: 1023px) { .feature-side { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; } .feature-side .feature-wide { grid-column: 1 / -1; } }
+/* 사용자 요청: 메인 앨범 영역 50%. 데스크톱·태블릿은 영역 폭을 절반으로, 모바일은 카드 4장을 2열(각 절반 폭)로 놓는다. */
+@media (min-width: 768px) { .feature-grid { max-width: 50%; } }
+@media (max-width: 767px) {
+  .feature-grid { grid-template-columns: 1fr 1fr; align-items: start; gap: 12px; }
+  .feature-side { display: contents; }
+  .feature-side .feature-wide { grid-column: auto; }
+  .feature-grid .feature-main .photo-frame, .feature-grid .feature-wide .photo-frame { aspect-ratio: 4 / 5; }
+  .feature-main-wrap .feature-label { display: none; }
+}
 .feature-card { display: grid; gap: 10px; text-decoration: none; min-width: 0; }
 .feature-main .photo-frame { aspect-ratio: 16 / 10; }
 .feature-wide .photo-frame { aspect-ratio: 3 / 2; }

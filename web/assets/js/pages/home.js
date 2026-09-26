@@ -10,7 +10,7 @@ let heroAlbumId = null;
 
 function featureCard(album, kind, label) {
   const cover = album.cover ? { id: album.cover.id, w: album.cover.w || 16, h: album.cover.h || 10 } : null;
-  const sizes = kind === 'feature-main' ? '(min-width: 1024px) 55vw, 100vw' : kind === 'feature-wide' ? '(min-width: 1024px) 40vw, 100vw' : '(min-width: 1024px) 20vw, 50vw';
+  const sizes = kind === 'feature-main' ? '(min-width: 1024px) 28vw, 50vw' : kind === 'feature-wide' ? '(min-width: 1024px) 20vw, 50vw' : '(min-width: 1024px) 10vw, 50vw';
   return el('a', { class: `feature-card ${kind}`, href: `/pages/album.html?id=${album.id}` },
     label ? el('span', { class: 'feature-label' }, label) : null,
     photoFrame(cover?.id, { color: album.cover?.color, photo: cover, sizes, variant: kind === 'feature-tall' ? 'medium' : 'large', alt: '' }),
