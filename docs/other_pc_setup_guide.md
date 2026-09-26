@@ -7,7 +7,7 @@
 - 저장소: `https://github.com/mohenz/secret_album.git`
 - 브랜치: `main`
 - 개발 기준 경로: `D:\Workspace\secret_album`
-- Python: 3.12 계열
+- Python: **3.14** (프로젝트 전용 가상환경 `.venv`)
 - PostgreSQL: 18, 전용 포트 `54328`
 - 웹: `http://127.0.0.1:8090`
 - API: `http://127.0.0.1:3051`
@@ -20,14 +20,14 @@
 다음 프로그램을 설치한다.
 
 1. Git for Windows
-2. Python 3.12 — 설치 시 `Add Python to PATH` 선택
+2. Python 3.14 — PATH 기본 Python이 다른 버전이어도 된다. `py` 실행기로 3.14를 지정해 가상환경을 만든다
 3. PostgreSQL 18 — 기본 설치 경로 `C:\Program Files\PostgreSQL\18`
 
 확인:
 
 ```powershell
 git --version
-python --version
+py -3.14 --version
 & 'C:\Program Files\PostgreSQL\18\bin\psql.exe' --version
 ```
 
@@ -50,15 +50,18 @@ GitHub 인증이 필요하면 개인 액세스 토큰 또는 Git Credential Mana
 
 ## 4. Python 환경 구성
 
-프로젝트 전용 가상환경 사용을 권장한다.
+프로젝트 전용 가상환경은 **필수**다. `sa.cmd`는 `.venv\Scripts\python.exe`로 API·Worker·웹을 실행하며, 가상환경이 없거나 3.14가 아니면 실행을 멈춘다.
 
 ```powershell
 Set-Location D:\Workspace\secret_album
-python -m venv .venv
+py -3.14 -m venv .venv
 .\.venv\Scripts\Activate.ps1
+python --version   # Python 3.14.x 확인
 python -m pip install --upgrade pip
 python -m pip install -r requirements.txt
 ```
+
+기존에 다른 버전으로 만든 `.venv`가 있으면 폴더를 삭제하고 다시 만든다.
 
 PowerShell 실행 정책 때문에 활성화가 막히면 현재 프로세스에서만 허용한다.
 
@@ -209,7 +212,7 @@ python scripts\check_module_layers.py
 python -m unittest discover -s tests -t .
 ```
 
-현재 기준으로 단위 테스트 7개가 통과해야 한다. 실패한 상태에서 기능 개발이나 원격 푸시를 진행하지 않는다.
+가상환경을 활성화한 상태에서 실행한다. 현재 기준으로 단위 테스트 8개가 통과해야 한다(`tests/test_runtime.py`는 Python 3.14가 아니면 실패한다). 실패한 상태에서 기능 개발이나 원격 푸시를 진행하지 않는다.
 
 ## 9. 다른 PC에서 작업을 이어가는 절차
 

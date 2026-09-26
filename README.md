@@ -8,7 +8,11 @@
 
 ## 실행
 
+Python 3.14 전용 가상환경이 필요합니다.
+
 ```powershell
+py -3.14 -m venv .venv
+.\.venv\Scripts\Activate.ps1
 python -m pip install -r requirements.txt
 .\sa.cmd
 ```
@@ -20,6 +24,8 @@ python -m pip install -r requirements.txt
 첫 실행에서 `local/album.env` 비밀번호와 `local/postgres-data`가 자동 생성됩니다. 종료는 `.\stop-album.cmd`를 사용합니다.
 
 ## 검증
+
+가상환경을 활성화한 상태에서 실행합니다.
 
 ```powershell
 python -m compileall -q scripts tests

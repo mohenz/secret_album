@@ -36,8 +36,15 @@ if (-not (Test-Path -LiteralPath (Join-Path $dataRoot 'PG_VERSION'))) {
 }
 $listener = Get-NetTCPConnection -LocalAddress 127.0.0.1 -LocalPort $pgPort -State Listen -ErrorAction SilentlyContinue
 if (-not $listener) {
-    & (Join-Path $pgBin 'pg_ctl.exe') -D $dataRoot -l (Join-Path $localRoot 'postgres.log') -o "-p $pgPort -h 127.0.0.1" start
-    if ($LASTEXITCODE -ne 0) { throw 'PostgreSQL 시작 실패' }
+    # pg_ctl을 숨겨진 새 콘솔에서 실행한다. 호출한 터미널의 콘솔을 물려받으면 그 창을 닫은 뒤
+    # 새 연결 프로세스가 0xC0000142(DLL 초기화 실패)로 죽는다.
+    # 출력은 리다이렉트하지 않는다. postgres가 리다이렉트 스트림을 물려받으면 호출 측이 끝나지 않는다.
+    # 서버 로그는 -l 옵션으로 파일에 남는다.
+    $logFile = Join-Path $localRoot 'postgres.log'
+    $process = Start-Process (Join-Path $pgBin 'pg_ctl.exe') -WindowStyle Hidden -PassThru `
+        -ArgumentList @('start', '-D', "`"$dataRoot`"", '-l', "`"$logFile`"", '-o', "`"-p $pgPort -h 127.0.0.1`"", '-w', '-t', '30')
+    $process.WaitForExit()
+    if ($process.ExitCode -ne 0) { throw "PostgreSQL 시작 실패(종료 코드 $($process.ExitCode)). $logFile 을 확인하세요." }
 }
 $exists = & (Join-Path $pgBin 'psql.exe') -h 127.0.0.1 -p $pgPort -U $dbUser -d postgres -tAc "SELECT 1 FROM pg_database WHERE datname='$dbName'"
 if (($exists | Out-String).Trim() -ne '1') {

@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from http.server import ThreadingHTTPServer
 
 from album_api.config import Settings

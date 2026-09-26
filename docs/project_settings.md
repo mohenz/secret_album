@@ -74,6 +74,7 @@
 | 사진 저장소 | `local/media/originals`(원본) + `local/media/derived`(thumb 480·medium 1600·large 3200 WebP) |
 | 사진 뷰어 | PhotoSwipe 5 (로컬 복사본) |
 | 사진 격자 | 저스티파이드 레이아웃 직접 구현 |
+| Python | **3.14** 고정, 프로젝트 전용 가상환경 `.venv`(`py -3.14 -m venv .venv`). `sa.cmd`가 `.venv` Python으로 실행하고 3.14가 아니면 중단 |
 | Python 패키지 | `psycopg[binary]` 3.3.4, `Pillow` 12.1.1, `argon2-cffi`, `pyotp`, (HEIC 지원 시) `pillow-heif` |
 | 테스트 | `unittest`, `check_module_layers.py`, Playwright(개발 PC) |
 

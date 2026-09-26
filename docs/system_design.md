@@ -83,7 +83,7 @@ Docker·Node 빌드 도구는 쓰지 않는다. 서버에는 PostgreSQL과 Pytho
 | 사진 격자 | 저스티파이드 레이아웃 직접 구현(`shared/justified.js`, 약 80줄) + `IntersectionObserver` 지연 로드·가상화 | 외부 라이브러리 없음 |
 | 사진 뷰어 | PhotoSwipe 5 (Vanilla ES 모듈, 로컬 복사본 `web/assets/vendor/photoswipe/`) | 스와이프·핀치 줌·키보드·접근성 기본 제공. 슬라이드쇼는 직접 구현 |
 | Dialog·메뉴 | 네이티브 `<dialog>`, `popover` 속성 + 공통 `shared/ui.js` | Bloom 예외(결정 D2) |
-| 백엔드 | Python 3.10+ 표준 라이브러리 `http.server` | cinetube와 같음 |
+| 백엔드 | Python **3.14** 표준 라이브러리 `http.server`, 프로젝트 전용 가상환경 `.venv` | cinetube는 Python 3.10. 비밀앨범은 3.14로 고정(2026-09-26 사용자 결정) |
 | DB 드라이버 | `psycopg[binary]` 3.x + 자체 연결 풀 | cinetube `database.py` 구조 재사용 |
 | 이미지 처리 | Pillow (WebP 생성, EXIF, 방향 보정) + `pillow-heif`(HEIC 지원 시) | cinetube는 Pillow로 썸네일 생성 |
 | 비밀번호 | `argon2-cffi` (argon2id) | 신규(cinetube는 로그인 없음) |
@@ -399,7 +399,8 @@ ALBUM_SLOW_REQUEST_MS=1000
 
 ```powershell
 cd D:\workspace\secret_album
-python -m pip install --user -r requirements.txt   # 최초 1회
+py -3.14 -m venv .venv                               # 최초 1회: Python 3.14 가상환경
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
 .\sa                                                 # DB → API → Worker → 웹 기동, 브라우저 열기
 python scripts\admin_create.py                      # 최초 1회 소유자 계정 생성
 .\stop-album.cmd                                     # 전체 중지
