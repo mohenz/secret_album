@@ -47,6 +47,7 @@ const uploader = new QuickUploader({
   onNoAlbum: () => {
     albumSelect.setAttribute('aria-invalid', 'true');
     albumError.replaceChildren(icon('circle-alert'), el('span', {}, 'Choose an album to upload to first.'));
+    status.set('Choose an album first, then paste or drop the images again.', 'error');
     albumSelect.focus();
   },
   onSaved: () => loadReview(),

@@ -135,15 +135,17 @@ export async function readClipboardImages() {
   return files;
 }
 
-// 입력칸에 글자를 붙여넣을 때는 가로채지 않는다.
+// 클립보드에 이미지가 있으면 포커스 위치(앨범 선택칸 등)와 상관없이 올린다.
+// 글자 입력칸에서 글자까지 함께 붙여넣는 경우만 기본 동작(글자 붙여넣기)에 맡긴다.
 export function enablePagePaste(onFiles, onNoImage) {
   addEventListener('paste', (event) => {
-    if (event.target.closest?.('input, textarea, select, [contenteditable]')) return;
+    const inTextField = Boolean(event.target.closest?.('input:not([type=checkbox]):not([type=radio]):not([type=file]), textarea, [contenteditable]'));
     const files = imagesFromClipboard(event.clipboardData);
-    if (files.length) {
+    const hasText = Boolean(event.clipboardData?.getData('text/plain'));
+    if (files.length && !(inTextField && hasText)) {
       event.preventDefault();
       onFiles(files);
-    } else {
+    } else if (!files.length && !inTextField) {
       onNoImage?.();
     }
   });

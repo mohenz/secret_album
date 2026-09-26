@@ -123,7 +123,7 @@ def run() -> int:
     with sync_playwright() as p:
         browser = p.chromium.launch(channel="chrome", headless=True)
         # 테스트 도구의 대기 함수가 앱의 CSP(script-src 'self')에 막히지 않도록 테스트 컨텍스트에서만 우회한다.
-        context = browser.new_context(viewport={"width": 1440, "height": 900}, locale="ko-KR", bypass_csp=True)
+        context = browser.new_context(viewport={"width": 1440, "height": 900}, locale="ko-KR", bypass_csp=True, permissions=["clipboard-read", "clipboard-write"])
         page = context.new_page()
         # 401(로그인 전 확인)과 409(일부러 올린 중복 사진)는 예상된 응답이다.
         page.on("console", lambda m: console_errors.append(m.text) if m.type == "error" and not re.search(r"status of (401|409)", m.text) else None)
@@ -209,12 +209,24 @@ def run() -> int:
           document.body.dispatchEvent(new ClipboardEvent('paste', { clipboardData: data, bubbles: true, cancelable: true })); }""")
         expect(page.locator(".quick-status")).to_contain_text("The clipboard has no image")
         check("이미지 없는 붙여넣기 안내", True)
+        # 4-2. 실제 클립보드 + 키보드 Ctrl+V. 앨범 선택칸에 포커스가 있어도 올라가야 한다.
+        page.evaluate("""async () => {
+          const canvas = document.createElement('canvas'); canvas.width = 320; canvas.height = 240;
+          const ctx = canvas.getContext('2d'); ctx.fillStyle = '#264653'; ctx.fillRect(0, 0, 320, 240);
+          const blob = await new Promise((r) => canvas.toBlob(r, 'image/png'));
+          await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+        }""")
+        page.focus("#album")
+        page.keyboard.press("Control+V")
+        expect(page.locator(".quick-status")).to_contain_text("Saved: clipboard-", timeout=30000)
+        check("실제 Ctrl+V (앨범 선택칸 포커스 상태)", True)
+        page.wait_for_function("document.querySelector('.quick-review-card') && document.querySelector('.quick-review-card').querySelector('.badge-success')", timeout=30000)
         page.screenshot(path=OUT / "02-upload.png", full_page=True)
 
         # 5. 앨범 감상
         page.goto(album_url)
         page.wait_for_selector(".flow-item img.loaded")
-        check("앨범 사진 흐름 7장(붙여넣기 포함)", page.locator(".flow-item").count() == 7)
+        check("앨범 사진 흐름 8장(붙여넣기 포함)", page.locator(".flow-item").count() == 8)
         check("앨범 표지 제목", page.locator("#album-title").inner_text() == "Autumn Seongsu Studio")
         img_src = page.locator(".flow-item img").first.get_attribute("src")
         check("사진은 API /media 경로로만 제공", f":{API_PORT}/media/" in img_src)
@@ -227,7 +239,7 @@ def run() -> int:
         page.wait_for_timeout(600)  # 열림 전환이 끝난 뒤 키 입력
         check("뷰어 열림 + URL photo 반영", "photo=" in page.url)
         page.keyboard.press("ArrowRight")
-        expect(page.locator(".pswp__counter")).to_have_text("2 / 7")
+        expect(page.locator(".pswp__counter")).to_have_text("2 / 8")
         check("방향키로 다음 사진", True)
         page.keyboard.press("f")
         page.wait_for_selector("text=Added to favorites.")
@@ -244,7 +256,7 @@ def run() -> int:
         # 6-1. 앨범 화면에서 바로 붙여넣기 → 이 앨범에 업로드
         page.evaluate(paste_png, "#e76f51")
         expect(page.locator(".quick-status.floating")).to_contain_text("Saved: clipboard-", timeout=30000)
-        page.wait_for_function("document.querySelectorAll('.flow-item').length === 8", timeout=15000)
+        page.wait_for_function("document.querySelectorAll('.flow-item').length === 9", timeout=15000)
         check("앨범 화면 붙여넣기 → 앨범에 추가", True)
 
         # 7. 편집 모드: 2장 선택 → 휴지통
@@ -256,7 +268,7 @@ def run() -> int:
         expect(page.locator(".bulk-bar .count")).to_have_text("2 selected")
         page.click(".bulk-bar button:has-text('Move to trash')")
         page.wait_for_selector("text=Moved 2 photos to trash.")
-        page.wait_for_function("document.querySelectorAll('.flow-item').length === 6")
+        page.wait_for_function("document.querySelectorAll('.flow-item').length === 7")
         check("편집 모드 일괄 휴지통 이동", True)
         page.click("#edit-done")
 
