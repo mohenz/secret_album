@@ -106,7 +106,8 @@ export class PhotoFlow {
     const width = this.container.clientWidth;
     if (!width) return;
     const focusedId = document.activeElement?.closest?.('.flow-item')?.dataset.id;
-    this.rows = computeRows(this.items, width, targetRowHeight(width), 2, innerHeight * 0.8);
+    const scale = this.options.density === 'compact' ? 0.6 : 1;
+    this.rows = computeRows(this.items, width, Math.round(targetRowHeight(width) * scale), 2, innerHeight * 0.8);
     this.container.replaceChildren();
     this.rendered = 0;
     this.renderMore(focusedId ? this.rows.length : 30);
@@ -120,7 +121,7 @@ export class PhotoFlow {
     let index = this.rows.slice(0, this.rendered).reduce((n, row) => n + row.items.length, 0);
     for (let r = this.rendered; r < end; r += 1) {
       const row = this.rows[r];
-      const rowNode = el('div', { class: 'flow-row', role: 'presentation' });
+      const rowNode = el('div', { class: `flow-row${row.pause ? ' pause-row' : ''}`, role: 'presentation' });
       rowNode.style.height = `${row.height}px`;
       for (const cell of row.items) {
         rowNode.append(this.renderItem(cell, row, index));
@@ -181,6 +182,11 @@ export class PhotoFlow {
       ids.splice(ids.indexOf(photo.id), 0, dragged);
       this.options.onReorder?.(ids);
     });
+  }
+
+  setDensity(density) {
+    this.options.density = density;
+    this.layout();
   }
 
   setEditing(on) {

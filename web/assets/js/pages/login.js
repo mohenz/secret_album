@@ -1,6 +1,7 @@
 // 잠금·로그인 화면. 사진·모델 정보는 전혀 보여 주지 않는다.
 import { api, ApiError } from '../shared/api.js';
 import { el, icon, setBusy, setChildren } from '../shared/ui.js';
+import { setShield } from '../shared/privacy.js';
 
 const card = document.getElementById('auth-card');
 const params = new URLSearchParams(location.search);
@@ -11,13 +12,29 @@ function nextUrl() {
   return next.startsWith('/') && !next.startsWith('//') && !next.startsWith('/login.html') ? next : '/';
 }
 
-function frame(title, description, ...content) {
+// 가이드 시안 _4: 자물쇠 배지 · 큰 제목 · 카드 안 입력 · 아래 보관소 표기
+function frame(title, description, form, ...extra) {
   setChildren(card,
-    el('div', { class: 'auth-brand' }, 'Secret Album'),
-    el('h1', { id: 'auth-title' }, title),
+    el('div', { class: 'auth-badge', 'aria-hidden': 'true' }, icon('lock', 'icon-24'), el('span', { class: 'auth-badge-mark' }, icon('shield-check'))),
+    el('p', { class: 'auth-brand' }, 'Secret Album'),
+    el('h1', { id: 'auth-title', class: 'visually-hidden' }, title),
     description ? el('p', { class: 'hint' }, description) : null,
-    ...content);
+    form ? el('div', { class: 'auth-panel' }, form) : null,
+    ...extra);
   card.querySelector('input')?.focus();
+}
+
+function passwordField(id, label, autocomplete) {
+  const input = el('input', { id, class: 'input', type: 'password', name: 'password', autocomplete, required: true, spellcheck: 'false', placeholder: label });
+  const toggle = el('button', { type: 'button', class: 'reveal', 'aria-label': 'Show password', 'aria-pressed': 'false', onclick: () => {
+    const show = input.type === 'password';
+    input.type = show ? 'text' : 'password';
+    toggle.setAttribute('aria-pressed', String(show));
+    toggle.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
+    toggle.replaceChildren(icon(show ? 'eye-off' : 'eye', 'icon-18'));
+    input.focus();
+  } }, icon('eye', 'icon-18'));
+  return el('div', { class: 'field' }, el('label', { class: 'visually-hidden', for: id }, label), el('div', { class: 'password-wrap' }, input, toggle));
 }
 
 function errorBox() {
@@ -52,8 +69,8 @@ function showLogin() {
   const box = errorBox();
   const form = el('form', { novalidate: true, 'aria-labelledby': 'auth-title' }, box,
     field('login-id', 'Username', { name: 'username', autocomplete: 'username', autocapitalize: 'none' }),
-    field('password', 'Password', { name: 'password', type: 'password', autocomplete: 'current-password' }),
-    el('button', { type: 'submit', class: 'btn btn-primary btn-block' }, 'Sign in'));
+    passwordField('password', 'Password', 'current-password'),
+    el('button', { type: 'submit', class: 'btn btn-primary btn-block' }, icon('lock'), el('span', {}, 'Sign in')));
   form.addEventListener('submit', (event) => {
     event.preventDefault();
     const loginId = form.querySelector('#login-id').value.trim();
@@ -70,8 +87,8 @@ function showLogin() {
 function showUnlock() {
   const box = errorBox();
   const form = el('form', { novalidate: true, 'aria-labelledby': 'auth-title' }, box,
-    field('unlock-password', 'Password', { name: 'password', type: 'password', autocomplete: 'current-password' }),
-    el('button', { type: 'submit', class: 'btn btn-primary btn-block' }, 'Unlock'));
+    passwordField('unlock-password', 'Password', 'current-password'),
+    el('button', { type: 'submit', class: 'btn btn-primary btn-block' }, icon('lock'), el('span', {}, 'Unlock')));
   form.addEventListener('submit', (event) => {
     event.preventDefault();
     submitting(form, async () => {
@@ -79,7 +96,7 @@ function showUnlock() {
       route(result.state);
     });
   });
-  frame('Screen locked', 'Enter your password to return to where you were.', form, otherAccount());
+  frame('Screen locked', 'Screen locked. Enter your password to return to where you were.', form, otherAccount());
 }
 
 function otherAccount() {
@@ -106,8 +123,9 @@ async function start() {
     route(me.state);
   } catch (error) {
     if (error instanceof ApiError && error.status === 401) showLogin();
-    else frame('Can\'t connect', null, errorAfter(error));
+    else frame('Can\'t connect', null, null, errorAfter(error));
   }
 }
 
+document.getElementById('auth-hide')?.addEventListener('click', () => setShield(true));
 start();

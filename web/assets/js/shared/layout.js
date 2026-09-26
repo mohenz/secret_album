@@ -21,22 +21,27 @@ const NAV = [
   ['favorites', '/pages/favorites.html', 'Favorites'],
 ];
 
-function renderHeader(active, overPhoto) {
+function renderHeader(active, overPhoto, onSlideshow) {
   const header = document.getElementById('site-header') || el('header', { id: 'site-header' });
   header.className = 'site-header';
   header.dataset.overPhoto = overPhoto ? 'true' : 'false';
   header.dataset.solid = overPhoto ? 'false' : 'true';
-  const menuButton = iconButton('ellipsis', 'Open menu', () => openMenu(menuButton, menuItems()));
+  const menuButton = iconButton('ellipsis-vertical', 'Open menu', () => openMenu(menuButton, menuItems()));
   menuButton.setAttribute('aria-haspopup', 'menu');
   menuButton.setAttribute('aria-expanded', 'false');
+  const initial = (me?.user.display_name || me?.user.login_id || '?').trim().charAt(0).toUpperCase();
+  const accountButton = el('button', { type: 'button', class: 'avatar-button', 'aria-label': `Account: ${me?.user.display_name || ''}`, 'aria-haspopup': 'menu', 'aria-expanded': 'false', onclick: () => openMenu(accountButton, accountItems()) },
+    el('span', { class: 'avatar', 'aria-hidden': 'true' }, initial));
   header.replaceChildren(
-    el('a', { class: 'brand', href: '/' }, 'Secret Album'),
+    el('a', { class: 'brand', href: '/' }, icon('lock', 'icon-18'), el('span', {}, 'Secret Album')),
     el('nav', { class: 'site-nav', 'aria-label': 'Main' },
       NAV.map(([key, href, label]) => el('a', { href, 'aria-current': key === active ? 'page' : undefined }, label))),
     el('div', { class: 'header-actions' },
       iconButton('search', 'Search', openSearch),
       iconButton('eye-off', 'Hide screen (Shift+H)', () => setShield(true)),
-      menuButton));
+      onSlideshow ? iconButton('square-play', 'Start slideshow', onSlideshow) : null,
+      menuButton,
+      accountButton));
   if (!header.isConnected) document.body.prepend(header);
 
   // 아래로 스크롤하면 숨기고 위로 스크롤하면 다시 보인다.
@@ -68,9 +73,16 @@ function menuItems() {
   }
   const theme = currentTheme();
   items.push({ label: theme === 'light' ? 'Switch to dark theme' : 'Switch to light theme', icon: theme === 'light' ? 'moon' : 'sun', onSelect: () => setTheme(theme === 'light' ? 'dark' : 'light') });
-  items.push({ label: 'Lock now', icon: 'lock', onSelect: lockNow });
-  items.push({ label: 'Sign out', icon: 'log-out', onSelect: logout });
   return items;
+}
+
+function accountItems() {
+  return [
+    { label: `${me?.user.display_name || ''} (${me?.user.login_id || ''})`, icon: 'circle-user', href: me?.user.role === 'owner' ? '/manage/settings.html' : undefined },
+    'separator',
+    { label: 'Lock now', icon: 'lock', onSelect: lockNow },
+    { label: 'Sign out', icon: 'log-out', onSelect: logout },
+  ];
 }
 
 async function logout() {
@@ -131,7 +143,7 @@ function renderQuickResults(data) {
 }
 
 // ------------------------------------------------ 시작
-export async function boot({ active = '', overPhoto = false, ownerOnly = false } = {}) {
+export async function boot({ active = '', overPhoto = false, ownerOnly = false, onSlideshow = null } = {}) {
   try {
     me = await api('/auth/me', { noRedirect: true });
   } catch (error) {
@@ -139,7 +151,7 @@ export async function boot({ active = '', overPhoto = false, ownerOnly = false }
     throw error;
   }
   if (me.state !== 'active') { goLogin(me.state); return new Promise(() => {}); }
-  renderHeader(active, overPhoto);
+  renderHeader(active, overPhoto, onSlideshow);
   initPrivacy({ idleMinutes: me.settings.session_idle_minutes || 15, blurThumbnails: !!me.settings.blur_thumbnails });
   if (ownerOnly && me.user.role !== 'owner') {
     document.getElementById('main').replaceChildren(el('div', { class: 'empty' }, icon('lock', 'icon-32'), el('p', { class: 'text-card' }, 'Only the owner can view this page.')));

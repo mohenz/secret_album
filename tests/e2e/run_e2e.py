@@ -268,8 +268,7 @@ def run() -> int:
         check("앨범 화면 붙여넣기 → 앨범에 추가", True)
 
         # 7. 편집 모드: 2장 선택 → 휴지통
-        page.click("button[aria-label='Album menu']")
-        page.click(".menu-item:has-text('Edit')")
+        page.click(".cover-top button:has-text('Edit mode')")
         items = page.locator(".flow-item a")
         items.nth(4).click()
         items.nth(5).click()
@@ -314,7 +313,7 @@ def run() -> int:
         check("Shift+H 다시 표시", not page.locator(".privacy-shield").is_visible())
 
         # 12. 잠금 → 비밀번호로 해제
-        page.click("button[aria-label='Open menu']")
+        page.click("button.avatar-button")
         page.click(".menu-item:has-text('Lock now')")
         page.wait_for_url(re.compile(r"lock=1"))
         page.wait_for_selector("#unlock-password")
@@ -361,7 +360,7 @@ def run() -> int:
 
         # 16. 로그아웃 후 사진 URL 차단
         page.goto(f"{BASE}/")
-        page.click("button[aria-label='Open menu']")
+        page.click("button.avatar-button")
         page.click(".menu-item:has-text('Sign out')")
         page.wait_for_url(re.compile(r"/login\.html"))
         status = page.evaluate(f"fetch('{img_src}', {{credentials: 'include'}}).then(r => r.status)")

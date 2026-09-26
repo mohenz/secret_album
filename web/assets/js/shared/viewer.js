@@ -1,7 +1,7 @@
 // 사진 뷰어 (PhotoSwipe 5). 어두운 고정 배경(예외 E2), 컨트롤 자동 숨김, 슬라이드쇼, 정보 패널.
 import PhotoSwipeLightbox from '/assets/vendor/photoswipe/photoswipe-lightbox.esm.min.js';
 import { api, mediaUrl, srcsetFor } from './api.js';
-import { addLockGuard } from './privacy.js';
+import { addLockGuard, setShield } from './privacy.js';
 import { el, formatBytes, formatDateTime, icon, joinMeta, showDialog, toast, toastError } from './ui.js';
 
 const SLIDESHOW_KEY = 'album-slideshow';
@@ -75,23 +75,36 @@ export function openViewer(config) {
   };
 
   const status = el('div', { class: 'viewer-slide-status', role: 'status', 'aria-live': 'polite', hidden: true });
+  const progress = el('div', { class: 'viewer-progress', 'aria-hidden': 'true' });
+  const slideshow = { ...slideshowOptions(), ...(config.slideshow || {}) };
+
+  // 슬라이드쇼 진행 막대: 사진이 바뀔 때마다 처음부터 채운다.
+  function restartProgress() {
+    progress.style.transition = 'none';
+    progress.style.width = '0';
+    if (!playing || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    void progress.offsetWidth;
+    progress.style.transition = `width ${slideshow.interval}s linear`;
+    progress.style.width = '100%';
+  }
 
   function stopSlideshow() {
     playing = false;
     clearInterval(slideshowTimer);
     status.hidden = true;
+    restartProgress();
     updateButtons();
   }
   function startSlideshow() {
-    const options = config.slideshow || slideshowOptions();
     playing = true;
     clearInterval(slideshowTimer);
     slideshowTimer = setInterval(() => {
-      if (!options.loop && pswp.currIndex >= items.length - 1) { stopSlideshow(); return; }
+      if (!slideshow.loop && pswp.currIndex >= items.length - 1) { stopSlideshow(); return; }
       pswp.next();
-    }, options.interval * 1000);
+    }, slideshow.interval * 1000);
     status.hidden = false;
-    status.textContent = `Slideshow playing · every ${options.interval} s · Space to pause`;
+    status.textContent = `Slideshow playing · every ${slideshow.interval} s · Space to pause`;
+    restartProgress();
     updateButtons();
     showControls();
   }
@@ -231,8 +244,22 @@ export function openViewer(config) {
       name, order, isButton: true, html: svgHtml(iconName), title: label, ariaLabel: label, className: `viewer-btn ${className}`,
       onClick: (event) => { event.stopPropagation(); onClick(); showControls(); },
     });
-    register('favorite', 8, 'heart', 'Add to favorites (F)', toggleFavorite, 'viewer-fav');
-    register('slideshow', 9, 'play', 'Start slideshow (Space)', toggleSlideshow, 'viewer-play');
+    register('hide', 7, 'eye-off', 'Hide screen (Shift+H)', () => setShield(true), 'viewer-hide');
+    register('slideshow', 8, 'play', 'Start slideshow (Space)', toggleSlideshow, 'viewer-play');
+    ui.registerElement({
+      name: 'interval', order: 8.5, isButton: false, appendTo: 'bar', tagName: 'label', className: 'viewer-interval-wrap',
+      onInit: (node) => {
+        const select = el('select', { class: 'viewer-interval', 'aria-label': 'Slideshow interval' },
+          [3, 5, 10].map((n) => el('option', { value: n, selected: n === slideshow.interval }, `${n}s`)));
+        select.addEventListener('change', () => {
+          slideshow.interval = Number(select.value);
+          saveSlideshowOptions({ interval: slideshow.interval, loop: slideshow.loop, shuffle: slideshow.shuffle });
+          if (playing) startSlideshow();
+        });
+        node.append(select);
+      },
+    });
+    register('favorite', 9, 'heart', 'Add to favorites (F)', toggleFavorite, 'viewer-fav');
     register('info', 10, 'info', 'Photo details (I)', toggleInfo, 'viewer-info-btn');
     if (config.owner || config.canDownload) {
       register('download', 11, 'download', 'Download original', () => { location.href = `${mediaUrl(slide().id, 'original')}?download=1`; }, 'viewer-download');
@@ -241,7 +268,7 @@ export function openViewer(config) {
 
   lightbox.on('afterInit', () => {
     pswp = lightbox.pswp;
-    pswp.element.append(status);
+    pswp.element.append(status, progress);
     ['pointermove', 'pointerdown', 'keydown', 'wheel'].forEach((type) => pswp.element.addEventListener(type, showControls, { passive: true }));
     showControls();
     updateButtons();
@@ -251,6 +278,7 @@ export function openViewer(config) {
   lightbox.on('change', () => {
     if (!pswp) return;
     updateButtons();
+    restartProgress();
     config.onChange?.(slide());
     if (infoPanel) renderInfo();
   });

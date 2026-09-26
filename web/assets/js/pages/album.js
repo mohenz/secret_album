@@ -1,7 +1,7 @@
 // 앨범: 표지 → 설명 → 사진 흐름 → 다음 앨범. 소유자는 편집 모드·끌어 놓기 업로드를 쓸 수 있다.
 import { api } from '../shared/api.js';
 import { albumForm } from '../shared/forms.js';
-import { albumCard, photoFrame, PhotoFlow } from '../shared/gallery.js';
+import { photoFrame, PhotoFlow } from '../shared/gallery.js';
 import { boot, isOwner } from '../shared/layout.js';
 import { createStatusLine, enablePageDrop, enablePagePaste, QuickUploader } from '../shared/uploader.js';
 import {
@@ -196,16 +196,16 @@ async function refresh() {
 function render() {
   const cover = album.cover ? { id: album.cover.id, w: album.cover.w, h: album.cover.h } : null;
   const owner = isOwner();
-  const moreButton = owner ? iconButton('ellipsis', 'Album menu', () => openMenu(moreButton, [
-    { label: 'Edit', icon: 'pencil', onSelect: () => setEditing(true) },
+  const moreButton = owner ? el('button', { type: 'button', class: 'pill', 'aria-label': 'Album menu', onclick: () => openMenu(moreButton, [
     { label: 'Quick upload', icon: 'upload', href: `/manage/upload.html?album=${albumId}` },
     { label: 'Edit album details', icon: 'settings', onSelect: async () => { if (await albumForm(album)) location.reload(); } },
     'separator',
     { label: 'Move album to trash', icon: 'trash-2', danger: true, onSelect: trashAlbum },
-  ])) : null;
+  ]) }, icon('ellipsis')) : null;
   moreButton?.setAttribute('aria-haspopup', 'menu');
   const flowNode = el('div', { 'aria-label': 'Photos' });
   flow = new PhotoFlow(flowNode, photos, {
+    density: savedDensity(),
     onOpen: (index) => view(index),
     onToggleFavorite: async (photo) => {
       try { await api(`/favorites/${photo.id}`, { method: photo.fav ? 'DELETE' : 'PUT' }); photo.fav = !photo.fav; flow.layout(); } catch (error) { toastError(error); }
@@ -217,25 +217,62 @@ function render() {
   setChildren(main,
     el('section', { class: 'album-cover', 'aria-labelledby': 'album-title' },
       cover ? photoFrame(cover.id, { color: album.cover.color, photo: cover, sizes: '100vw', variant: 'large', eager: true }) : null,
+      el('div', { class: 'cover-top' },
+        el('a', { class: 'back-link', href: '/pages/albums.html' }, icon('arrow-left'), 'All albums'),
+        el('div', { class: 'pill-group' },
+          photos.length ? el('button', { type: 'button', class: 'pill', onclick: slideshowDialog }, icon('play'), 'Play slideshow') : null,
+          owner ? el('button', { type: 'button', class: 'pill', onclick: () => setEditing(true) }, icon('pencil'), 'Edit mode') : null,
+          moreButton)),
       el('div', { class: 'hero-caption' },
-        el('h1', { class: 'display-title', id: 'album-title' }, album.title),
-        el('p', { class: 'hero-meta' },
-          el('a', { href: `/pages/model.html?id=${album.model_id}` }, album.model_name), ' · ',
-          joinMeta(album.location, formatDate(album.shot_on)), album.location || album.shot_on ? ' · ' : '',
-          el('span', { id: 'album-count', 'data-numeric': true }, plural(album.photo_count, 'photo'))))),
+        el('h1', { class: 'display-title', id: 'album-title' }, album.title))),
     album.description ? el('div', { class: 'album-intro' }, el('p', { class: 'readable' }, album.description)) : null,
     el('div', { class: 'edit-banner', id: 'edit-banner', hidden: true },
       el('span', { class: 'text-card' }, 'Editing'),
       el('span', { class: 'text-meta' }, 'Tap photos to select them. Drag to reorder.'),
       button('Done', { variant: 'btn-primary', onclick: () => setEditing(false), className: 'edit-done' })),
-    el('div', { class: 'album-toolbar', id: 'album-toolbar' },
-      el('div', { class: 'group' }),
-      el('div', { class: 'group' }, photos.length ? button('Slideshow', { variant: 'btn-outline', iconName: 'play', onclick: slideshowDialog }) : null, moreButton)),
+    photos.length ? el('div', { class: 'density-bar', id: 'album-toolbar' },
+      el('span', { class: 'label', id: 'density-label' }, 'Grid density'),
+      el('div', { class: 'segmented', role: 'group', 'aria-labelledby': 'density-label' },
+        densityButton('comfortable', 'layout-grid', 'Comfortable'),
+        densityButton('compact', 'columns-3', 'Compact')),
+      albumMeta()) : el('div', { id: 'album-toolbar' }, albumMeta()),
     photos.length ? flowNode : emptyState('image', 'No photos in this album yet', owner ? 'Drop photos onto this page, paste with Ctrl+V, or use the upload page.' : null,
       owner ? el('a', { class: 'btn btn-primary', href: `/manage/upload.html?album=${albumId}` }, icon('upload'), 'Quick upload') : null),
-    album.next_album ? el('section', { class: 'next-album', 'aria-label': 'Next album' }, el('p', { class: 'label' }, 'More from this model'), albumCard(album.next_album, { sizes: '100vw' })) : null,
-    el('footer', { class: 'page-foot' }, '← → browse · Space slideshow · F favorite · I details · Shift+H hide screen'));
+    album.next_album ? seriesCard(album.next_album) : null,
+    el('footer', { class: 'site-footer' },
+      el('span', { class: 'mark' }, icon('lock'), 'Secret Album ARCHIVE'),
+      el('span', {}, `© ${new Date().getFullYear()} Private Exhibition. ← → browse · Space slideshow · F favorite · I details · Shift+H hide screen`)));
   document.getElementById('edit-banner').querySelector('.edit-done').id = 'edit-done';
+}
+
+const DENSITY_KEY = 'album-grid-density';
+function savedDensity() {
+  try { return localStorage.getItem(DENSITY_KEY) === 'compact' ? 'compact' : 'comfortable'; } catch { return 'comfortable'; }
+}
+function densityButton(value, iconName, label) {
+  const node = el('button', { type: 'button', 'aria-label': label, title: label, 'aria-pressed': String(savedDensity() === value), onclick: () => {
+    try { localStorage.setItem(DENSITY_KEY, value); } catch { /* 이 기기에 저장할 수 없음 */ }
+    node.parentElement.querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', String(b === node)));
+    flow.setDensity(value);
+  } }, icon(iconName));
+  return node;
+}
+
+function albumMeta() {
+  return el('p', { class: 'album-meta' },
+    el('a', { href: `/pages/model.html?id=${album.model_id}` }, album.model_name),
+    joinMeta(album.location, formatDate(album.shot_on)) ? ` · ${joinMeta(album.location, formatDate(album.shot_on))}` : '',
+    ' · ', el('span', { id: 'album-count', 'data-numeric': true }, plural(album.photo_count, 'photo')));
+}
+
+function seriesCard(next) {
+  return el('section', { class: 'series', 'aria-labelledby': 'series-title' },
+    el('p', { class: 'series-label', id: 'series-title' }, icon('book-open'), 'Continue the series'),
+    el('a', { class: 'series-card', href: `/pages/album.html?id=${next.id}` },
+      el('span', { class: 'title' }, `${next.model_name}: ${next.title}`, icon('arrow-right', 'icon-20')),
+      el('span', { class: 'right' },
+        next.cover ? el('span', { class: 'stack', 'aria-hidden': 'true' }, photoFrame(next.cover.id, { color: next.cover.color, variant: 'thumb', alt: '' })) : null,
+        el('span', { class: 'pill' }, 'View album'))));
 }
 
 async function trashAlbum() {
@@ -249,7 +286,7 @@ async function trashAlbum() {
   try { await api(`/albums/${albumId}`, { method: 'DELETE' }); location.replace('/pages/albums.html'); } catch (error) { toastError(error); }
 }
 
-me = await boot({ active: 'albums', overPhoto: true });
+me = await boot({ active: 'albums', overPhoto: true, onSlideshow: () => { if (photos.length) slideshowDialog(); } });
 main.replaceChildren(el('div', { class: 'page-top' }, loadingState()));
 try {
   if (!albumId) throw Object.assign(new Error('Album not found. Please pick it again from the album list.'), { code: 'not_found' });
@@ -263,6 +300,7 @@ try {
     enablePageDrop((files) => uploadHere(files, 'upload'));
     enablePagePaste((files) => uploadHere(files, 'clipboard'));
   }
+  if (params.get('slideshow') === '1' && photos.some((p) => p.status === 'ready')) view(0, { startSlideshow: true, slideshow: slideshowOptions() });
   const photoParam = params.get('photo');
   if (photoParam) {
     const index = photos.findIndex((p) => p.id === photoParam);
