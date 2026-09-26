@@ -1,185 +1,125 @@
-// 업로드 대기열: 동시 3개, 파일별 진행률, 서버 처리 상태 확인(2초 간격).
-import { api, uploadFile } from './api.js';
-import { el, formatBytes, formatNumber, icon } from './ui.js';
+// 퀵 업로드 (cinetube 갤러리 퀵등록 방식이 표준).
+// 붙여넣기(Ctrl+V)·끌어 놓기·파일 선택으로 들어온 이미지를 받는 즉시 한 장씩 순서대로 저장하고,
+// 한 줄 상태 표시로 진행 상황을 알린다: 저장 중(대기 n장) → 완료(4초 뒤 사라짐) / 건너뜀 / 실패.
+import { uploadFile } from './api.js';
+import { el, icon, plural } from './ui.js';
 
-const ACCEPT = /\.(jpe?g|png|webp|heic|heif)$/i;
-const CONCURRENCY = 3;
+const IMAGE_NAME = /\.(jpe?g|png|webp|heic|heif)$/i;
 
-const LABEL = {
-  waiting: 'Waiting',
-  uploading: 'Uploading…',
-  processing: 'Processing…',
-  done: 'Done',
-  failed: 'Failed',
-  skipped: 'Skipped',
-};
+// ------------------------------------------------ 상태 표시줄
+export function createStatusLine({ floating = false } = {}) {
+  const base = `quick-status${floating ? ' floating' : ''}`;
+  const node = el('p', { class: base, role: 'status', 'aria-live': 'polite', hidden: true });
+  let timer = null;
+  const ICONS = { uploading: 'loader-circle', done: 'circle-check', skipped: 'circle-alert', error: 'circle-alert' };
+  return {
+    node,
+    set(text, kind) {
+      clearTimeout(timer);
+      node.hidden = !text;
+      node.className = `${base} is-${kind}`;
+      node.replaceChildren(icon(ICONS[kind] || 'info', kind === 'uploading' ? 'spin' : ''), el('span', {}, text));
+      if (kind === 'done') timer = setTimeout(() => { node.hidden = true; }, 4000);
+    },
+  };
+}
 
-export class Uploader {
-  constructor({ list, summary, getAlbumId, onFinished }) {
-    this.list = list;
-    this.summary = summary;
-    this.getAlbumId = getAlbumId;
-    this.onFinished = onFinished;
-    this.entries = [];
-    this.active = 0;
-    this.reported = 0;  // 이미 완료를 알린 항목 수. 새 항목이 모두 끝났을 때만 한 번 알린다.
-    this.pollTimer = null;
-    this.beforeUnload = (event) => { if (this.busy()) { event.preventDefault(); event.returnValue = ''; } };
-    addEventListener('beforeunload', this.beforeUnload);
+// ------------------------------------------------ 파일 이름
+// 복사한 이미지는 대개 "image.png" 같은 이름으로 들어오므로, 로컬 시각과 순번으로 새 이름을 붙인다.
+function stamp() {
+  const now = new Date();
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}-${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
+}
+
+function normalizeFile(file, source, index) {
+  const generic = !file.name || /^image\.(png|jpe?g|gif|webp)$/i.test(file.name);
+  if (!generic) return file;
+  const ext = { 'image/png': 'png', 'image/jpeg': 'jpg', 'image/webp': 'webp', 'image/heic': 'heic', 'image/heif': 'heif' }[file.type] || 'png';
+  return new File([file], `${source}-${stamp()}${index ? `-${index + 1}` : ''}.${ext}`, { type: file.type || 'image/png', lastModified: Date.now() });
+}
+
+const isImage = (file) => file.type.startsWith('image/') || IMAGE_NAME.test(file.name || '');
+
+// ------------------------------------------------ 저장 대기열 (한 장씩 순서대로)
+export class QuickUploader {
+  /*
+    getAlbumId(): 올릴 앨범 id (없으면 onNoAlbum 호출)
+    status: createStatusLine() 결과
+    onSaved(result, file): 서버가 받은 직후 (사진 처리는 Worker가 이어서 한다)
+    onIdle(batch): 대기열이 비었을 때
+  */
+  constructor({ getAlbumId, status, onSaved, onNoAlbum, onIdle }) {
+    Object.assign(this, { getAlbumId, status, onSaved, onNoAlbum, onIdle });
+    this.queue = [];
+    this.processing = false;
+    this.batch = { saved: 0, skipped: 0, failed: 0, total: 0 };
+    addEventListener('beforeunload', (event) => { if (this.busy()) { event.preventDefault(); event.returnValue = ''; } });
   }
 
   busy() {
-    return this.entries.some((e) => ['waiting', 'uploading', 'processing'].includes(e.state));
+    return this.processing || this.queue.length > 0;
   }
 
-  add(fileList) {
+  add(fileList, source = 'upload') {
+    const files = [...(fileList || [])];
+    const images = files.filter(isImage);
+    if (!images.length) {
+      this.status.set(files.length ? 'Only JPEG, PNG, WebP, and HEIC images can be uploaded.' : 'There is no image to upload.', 'error');
+      return;
+    }
     const albumId = this.getAlbumId();
-    if (!albumId) throw new Error('Choose an album to upload to first.');
-    for (const file of fileList) {
-      const entry = { file, albumId, state: 'waiting', progress: 0, message: '', photoId: null };
-      entry.node = this.renderEntry(entry);
-      if (!ACCEPT.test(file.name) && !file.type.startsWith('image/')) {
-        entry.state = 'failed';
-        entry.message = 'Unsupported file type. Only JPEG, PNG, WebP, and HEIC photos can be uploaded.';
-      }
-      this.entries.push(entry);
-      this.list.append(entry.node);
-      this.update(entry);
+    if (!albumId) { this.onNoAlbum?.(); return; }
+    if (!this.busy()) this.batch = { saved: 0, skipped: 0, failed: 0, total: 0 };
+    images.forEach((file, index) => this.queue.push({ file: normalizeFile(file, source, images.length > 1 ? index : 0), albumId }));
+    this.batch.total += images.length;
+    this.process();
+  }
+
+  async process() {
+    if (this.processing) return;
+    this.processing = true;
+    while (this.queue.length) {
+      const { file, albumId } = this.queue.shift();
+      await this.save(file, albumId);
     }
-    this.pump();
-  }
-
-  renderEntry(entry) {
-    const preview = el('img', { class: 'thumb', alt: '', width: 48, height: 48 });
-    if (entry.file.type.startsWith('image/') && entry.file.size < 30 * 1024 * 1024 && !/heic|heif/i.test(entry.file.type)) {
-      const url = URL.createObjectURL(entry.file);
-      preview.src = url;
-      preview.addEventListener('load', () => URL.revokeObjectURL(url), { once: true });
+    this.processing = false;
+    const { saved, skipped, failed, total } = this.batch;
+    if (total > 1) {
+      const kind = failed ? 'error' : skipped && !saved ? 'skipped' : 'done';
+      this.status.set(`Done: ${plural(saved, 'photo')} saved · ${skipped} skipped · ${failed} failed`, kind);
     }
-    entry.bar = el('span');
-    entry.sub = el('p', { class: 'sub' });
-    entry.badge = el('span', { class: 'badge' });
-    return el('div', { class: 'upload-item', role: 'listitem' }, preview,
-      el('div', { style: undefined }, el('p', { class: 'name' }, entry.file.name), entry.sub, el('div', { class: 'progress', 'aria-hidden': 'true' }, entry.bar)),
-      entry.badge);
+    this.onIdle?.(this.batch);
   }
 
-  update(entry) {
-    const badgeClass = { done: 'badge-success', failed: 'badge-error', skipped: 'badge-warning' }[entry.state] || '';
-    const iconName = { done: 'circle-check', failed: 'circle-alert', skipped: 'circle-alert', uploading: 'loader-circle', processing: 'loader-circle' }[entry.state];
-    entry.badge.className = `badge ${badgeClass}`;
-    entry.badge.replaceChildren(...(iconName ? [icon(iconName, ['uploading', 'processing'].includes(entry.state) ? 'spin' : '')] : []), LABEL[entry.state]);
-    entry.bar.style.width = `${Math.round((entry.state === 'uploading' ? entry.progress : ['done', 'processing'].includes(entry.state) ? 1 : 0) * 100)}%`;
-    entry.sub.textContent = entry.message || formatBytes(entry.file.size);
-    entry.sub.classList.toggle('error', entry.state === 'failed');
-    this.renderSummary();
-  }
-
-  renderSummary() {
-    if (!this.summary) return;
-    const count = (state) => this.entries.filter((e) => e.state === state).length;
-    const total = this.entries.length;
-    const finished = count('done') + count('failed') + count('skipped');
-    this.summary.replaceChildren(
-      el('span', { 'data-numeric': true }, `${formatNumber(finished)} of ${formatNumber(total)} finished`),
-      el('span', { class: 'text-meta' }, `Uploaded ${formatNumber(count('done'))} · Skipped ${formatNumber(count('skipped'))} · Failed ${formatNumber(count('failed'))}`));
-    if (total && finished === total && total > this.reported) {
-      const batch = this.entries.slice(this.reported);
-      this.reported = total;
-      this.onFinished?.(batch, this.entries);
-    }
-  }
-
-  pump() {
-    while (this.active < CONCURRENCY) {
-      const next = this.entries.find((e) => e.state === 'waiting');
-      if (!next) break;
-      this.start(next);
-    }
-  }
-
-  async start(entry) {
-    this.active += 1;
-    entry.state = 'uploading';
-    this.update(entry);
+  async save(file, albumId) {
+    const waiting = this.queue.length;
+    const label = (percent) => `Saving ${file.name}${percent ? ` ${percent}%` : '…'}${waiting ? ` (${waiting} waiting)` : ''}`;
+    this.status.set(label(0), 'uploading');
     try {
-      const result = await uploadFile(entry.file, entry.albumId, (p) => { entry.progress = p; this.update(entry); });
-      entry.photoId = result.photo_id;
-      entry.state = 'processing';
-      entry.message = '';
-      this.schedulePoll();
+      const result = await uploadFile(file, albumId, (p) => this.status.set(label(Math.round(p * 100)), 'uploading'));
+      this.batch.saved += 1;
+      this.status.set(`Saved: ${file.name}`, 'done');
+      this.onSaved?.(result, file);
     } catch (error) {
-      if (error.code === 'duplicate') { entry.state = 'skipped'; entry.message = error.message; }
-      else { entry.state = 'failed'; entry.message = error.message; entry.retry = true; this.addRetry(entry); }
-    } finally {
-      this.active -= 1;
-      this.update(entry);
-      this.pump();
+      if (error.code === 'duplicate') {
+        this.batch.skipped += 1;
+        this.status.set(`${file.name} — ${error.message}`, 'skipped');
+      } else {
+        this.batch.failed += 1;
+        this.status.set(`Failed (${file.name}): ${error.message}`, 'error');
+      }
     }
   }
-
-  addRetry(entry) {
-    if (entry.node.querySelector('.retry')) return;
-    entry.node.append(el('button', { type: 'button', class: 'btn btn-outline retry', onclick: (event) => {
-      event.currentTarget.remove();
-      entry.state = 'waiting';
-      entry.message = '';
-      this.update(entry);
-      this.pump();
-    } }, 'Try again'));
-  }
-
-  schedulePoll() {
-    if (this.pollTimer) return;
-    this.pollTimer = setTimeout(() => this.poll(), 2000);
-  }
-
-  async poll() {
-    this.pollTimer = null;
-    const pending = this.entries.filter((e) => e.state === 'processing' && e.photoId);
-    if (!pending.length) return;
-    for (let i = 0; i < pending.length; i += 200) {
-      const chunk = pending.slice(i, i + 200);
-      try {
-        const { items } = await api(`/uploads/status?ids=${chunk.map((e) => e.photoId).join(',')}`);
-        for (const item of items) {
-          const entry = chunk.find((e) => e.photoId === item.id);
-          if (!entry) continue;
-          if (item.status === 'ready') { entry.state = 'done'; this.update(entry); }
-          if (item.status === 'failed') { entry.state = 'failed'; entry.message = item.error || 'Could not process this photo. Check the original and upload it again.'; this.update(entry); }
-        }
-      } catch { /* 다음 확인 때 다시 시도 */ }
-    }
-    if (this.entries.some((e) => e.state === 'processing')) this.schedulePoll();
-  }
-
-  destroy() {
-    removeEventListener('beforeunload', this.beforeUnload);
-    clearTimeout(this.pollTimer);
-  }
 }
 
-// ------------------------------------------------ 클립보드 이미지
-// 복사한 이미지는 대개 "image.png"라는 같은 이름으로 들어오므로, 시각과 순번으로 이름을 새로 붙인다.
-function pastedName(type, index) {
-  const ext = { 'image/png': 'png', 'image/jpeg': 'jpg', 'image/webp': 'webp', 'image/heic': 'heic', 'image/heif': 'heif' }[type] || 'png';
-  const now = new Date();
-  const pad = (n) => String(n).padStart(2, '0');
-  const stamp = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}-${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
-  return `pasted-${stamp}${index ? `-${index + 1}` : ''}.${ext}`;
-}
-
-function renamePasted(blobs) {
-  return blobs.map((blob, index) => new File([blob], pastedName(blob.type, index), { type: blob.type, lastModified: Date.now() }));
-}
-
+// ------------------------------------------------ 클립보드
 export function imagesFromClipboard(clipboardData) {
   if (!clipboardData) return [];
-  const blobs = [...(clipboardData.items || [])]
+  return [...(clipboardData.items || [])]
     .filter((item) => item.kind === 'file' && item.type.startsWith('image/'))
     .map((item) => item.getAsFile())
     .filter(Boolean);
-  return renamePasted(blobs);
 }
 
 // 버튼으로 붙여넣기: 보안 컨텍스트(https 또는 localhost)에서만 된다. 그 밖에서는 Ctrl+V만 쓴다.
@@ -187,18 +127,18 @@ export const canReadClipboard = () => Boolean(window.isSecureContext && navigato
 
 export async function readClipboardImages() {
   const items = await navigator.clipboard.read();
-  const blobs = [];
+  const files = [];
   for (const item of items) {
     const type = item.types.find((t) => t.startsWith('image/'));
-    if (type) blobs.push(await item.getType(type));
+    if (type) files.push(new File([await item.getType(type)], '', { type }));
   }
-  return renamePasted(blobs);
+  return files;
 }
 
 // 입력칸에 글자를 붙여넣을 때는 가로채지 않는다.
 export function enablePagePaste(onFiles, onNoImage) {
   addEventListener('paste', (event) => {
-    if (event.target.closest?.('input, textarea, [contenteditable]')) return;
+    if (event.target.closest?.('input, textarea, select, [contenteditable]')) return;
     const files = imagesFromClipboard(event.clipboardData);
     if (files.length) {
       event.preventDefault();

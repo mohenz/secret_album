@@ -624,6 +624,12 @@ def upload(request: Request):
     return 202, {"photo_id": photo["id"], "job_id": job_id, "status": "processing"}
 
 
+@route("GET", "/uploads/recent", OWNER)
+def recent_uploads(request: Request):
+    with database.transaction() as cursor:
+        return {"items": repository.recent_uploads(cursor, request.int_arg("limit", 200, 1, 1000))}
+
+
 @route("GET", "/uploads/status", OWNER)
 def upload_status(request: Request):
     ids = [value for value in (request.arg("ids") or "").split(",") if value]

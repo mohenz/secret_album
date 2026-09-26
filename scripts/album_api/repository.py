@@ -708,6 +708,31 @@ def create_photo(cursor, actor, album_id: str, filename: str, upload: dict) -> d
     return {"id": str(row["id"]), "created_at": row["created_at"], "album_id": album_id}
 
 
+def recent_uploads(cursor, limit: int = 200) -> list[dict]:
+    """퀵 업로드 화면의 등록 확인 목록. 최근 올린 사진부터."""
+    cursor.execute(
+        """
+        SELECT p.id, p.original_filename, p.status, p.error, p.created_at, p.width, p.height, p.dominant_color,
+               p.album_id, a.title AS album_title, m.name AS model_name,
+               COALESCE(array_agg(t.name ORDER BY t.name) FILTER (WHERE t.name IS NOT NULL), '{}') AS tags
+        FROM photos p JOIN albums a ON a.id = p.album_id JOIN models m ON m.id = p.model_id
+        LEFT JOIN photo_tags pt ON pt.photo_id = p.id LEFT JOIN tags t ON t.id = pt.tag_id
+        WHERE p.deleted_at IS NULL AND a.deleted_at IS NULL
+        GROUP BY p.id, a.title, m.name
+        ORDER BY p.created_at DESC LIMIT %s
+        """,
+        (max(1, min(limit, 1000)),),
+    )
+    return [
+        {
+            "id": str(r["id"]), "filename": r["original_filename"], "status": r["status"], "error": r["error"],
+            "created_at": _iso(r["created_at"]), "w": r["width"] or 1, "h": r["height"] or 1, "color": r["dominant_color"],
+            "album_id": str(r["album_id"]), "album_title": r["album_title"], "model_name": r["model_name"], "tags": list(r["tags"]),
+        }
+        for r in cursor.fetchall()
+    ]
+
+
 def upload_status(cursor, ids: list[str]) -> list[dict]:
     ids = parse_uuid_list(ids, limit=500)
     cursor.execute("SELECT id, status, error FROM photos WHERE id = ANY(%s::uuid[])", (ids,))

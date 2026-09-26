@@ -3,7 +3,7 @@ import { api } from '../shared/api.js';
 import { albumForm } from '../shared/forms.js';
 import { albumCard, photoFrame, PhotoFlow } from '../shared/gallery.js';
 import { boot, isOwner } from '../shared/layout.js';
-import { enablePageDrop, enablePagePaste, Uploader } from '../shared/uploader.js';
+import { createStatusLine, enablePageDrop, enablePagePaste, QuickUploader } from '../shared/uploader.js';
 import {
   button, confirmDialog, el, errorState, emptyState, formatDate, formatNumber, icon, iconButton, joinMeta, loadingState, openMenu, plural, setChildren, showDialog, toast, toastError,
 } from '../shared/ui.js';
@@ -157,20 +157,29 @@ function setEditing(on) {
   else { bulkBar?.remove(); bulkBar = null; }
 }
 
-// ------------------------------------------------ 끌어 놓기 업로드
-let uploadDialog = null;
-function uploadHere(files) {
-  if (!uploadDialog) {
-    const list = el('div', { class: 'upload-list', role: 'list' });
-    const summary = el('div', { class: 'upload-summary', role: 'status' });
-    uploadDialog = el('dialog', { class: 'dialog sheet', 'aria-labelledby': 'up-title' }, el('div', { class: 'dialog-body' },
-      el('h2', { class: 'dialog-title', id: 'up-title' }, `Upload to “${album.title}”`), summary, list,
-      el('div', { class: 'dialog-actions' }, button('Close', { variant: 'btn-outline', onclick: () => uploadDialog.close() }))));
-    uploadDialog.uploader = new Uploader({ list, summary, getAlbumId: () => albumId, onFinished: () => refresh() });
-    uploadDialog.addEventListener('close', () => { uploadDialog.uploader.destroy(); uploadDialog = null; refresh(); }, { once: true });
-    showDialog(uploadDialog);
+// ------------------------------------------------ 끌어 놓기·붙여넣기 업로드 (퀵 업로드 방식)
+let quickUploader = null;
+function uploadHere(files, source = 'upload') {
+  if (!quickUploader) {
+    const status = createStatusLine({ floating: true });
+    document.body.append(status.node);
+    quickUploader = new QuickUploader({
+      getAlbumId: () => albumId,
+      status,
+      onSaved: () => { refresh().then(watchProcessing).catch(() => {}); },
+    });
   }
-  uploadDialog.uploader.add(files);
+  quickUploader.add(files, source);
+}
+
+// 처리 중인 사진이 있으면 끝날 때까지 잠시 간격으로 다시 확인한다.
+let processingTimer = null;
+function watchProcessing() {
+  if (processingTimer || !photos.some((p) => p.status === 'processing')) return;
+  processingTimer = setInterval(async () => {
+    if (!photos.some((p) => p.status === 'processing')) { clearInterval(processingTimer); processingTimer = null; return; }
+    try { await refresh(); } catch { /* 다음 확인 때 다시 */ }
+  }, 3000);
 }
 
 // ------------------------------------------------ 화면
@@ -189,7 +198,7 @@ function render() {
   const owner = isOwner();
   const moreButton = owner ? iconButton('ellipsis', 'Album menu', () => openMenu(moreButton, [
     { label: 'Edit', icon: 'pencil', onSelect: () => setEditing(true) },
-    { label: 'Upload photos', icon: 'upload', href: `/manage/upload.html?album=${albumId}` },
+    { label: 'Quick upload', icon: 'upload', href: `/manage/upload.html?album=${albumId}` },
     { label: 'Edit album details', icon: 'settings', onSelect: async () => { if (await albumForm(album)) location.reload(); } },
     'separator',
     { label: 'Move album to trash', icon: 'trash-2', danger: true, onSelect: trashAlbum },
@@ -223,7 +232,7 @@ function render() {
       el('div', { class: 'group' }),
       el('div', { class: 'group' }, photos.length ? button('Slideshow', { variant: 'btn-outline', iconName: 'play', onclick: slideshowDialog }) : null, moreButton)),
     photos.length ? flowNode : emptyState('image', 'No photos in this album yet', owner ? 'Drop photos onto this page, paste with Ctrl+V, or use the upload page.' : null,
-      owner ? el('a', { class: 'btn btn-primary', href: `/manage/upload.html?album=${albumId}` }, icon('upload'), 'Upload photos') : null),
+      owner ? el('a', { class: 'btn btn-primary', href: `/manage/upload.html?album=${albumId}` }, icon('upload'), 'Quick upload') : null),
     album.next_album ? el('section', { class: 'next-album', 'aria-label': 'Next album' }, el('p', { class: 'label' }, 'More from this model'), albumCard(album.next_album, { sizes: '100vw' })) : null,
     el('footer', { class: 'page-foot' }, '← → browse · Space slideshow · F favorite · I details · Shift+H hide screen'));
   document.getElementById('edit-banner').querySelector('.edit-done').id = 'edit-done';
@@ -251,19 +260,15 @@ try {
   render();
   if (isOwner()) {
     addEventListener('keydown', (event) => { if (event.key === 'Escape' && flow.editing && !document.querySelector('dialog[open], .pswp')) setEditing(false); });
-    enablePageDrop(uploadHere);
-    enablePagePaste(uploadHere);
+    enablePageDrop((files) => uploadHere(files, 'upload'));
+    enablePagePaste((files) => uploadHere(files, 'clipboard'));
   }
   const photoParam = params.get('photo');
   if (photoParam) {
     const index = photos.findIndex((p) => p.id === photoParam);
     if (index >= 0) view(index);
   }
-  // 처리 중인 사진이 있으면 잠시 뒤 다시 확인한다.
-  const poll = setInterval(async () => {
-    if (!photos.some((p) => p.status === 'processing')) { clearInterval(poll); return; }
-    try { await refresh(); } catch { /* 다음 확인 때 다시 */ }
-  }, 4000);
+  watchProcessing();
 } catch (error) {
   Object.assign(document.getElementById('site-header').dataset, { overPhoto: 'false', solid: 'true' });
   main.replaceChildren(el('div', { class: 'page-top' }, errorState(error, () => location.reload())));

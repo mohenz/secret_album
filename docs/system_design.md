@@ -300,8 +300,8 @@ background_jobs  cinetube와 같은 구조 (id, job_type, status, payload, resul
 cinetube는 이미지를 data URL(JSON)로 보내지만, 사진 원본은 크고 개수가 많아 **파일 하나당 요청 하나로 바이너리를 그대로 전송**한다.
 
 ```text
-1. 화면(upload.html): 모델·앨범 선택 → 파일마다
-   PUT /uploads?album_id=<id>&filename=<원본명>   본문 = 파일 바이너리, 동시 3개
+1. 화면(upload.html, 퀵 업로드): 앨범 선택 → 붙여넣기·끌어 놓기·파일 선택으로 받은 즉시 한 장씩 순서대로
+   PUT /uploads?album_id=<id>&filename=<원본명>   본문 = 파일 바이너리 (cinetube 갤러리 퀵등록 방식)
 2. API
    - 세션(owner)·Origin 확인, Content-Length ≤ 제한
    - local/uploads/<임시 id>로 스트리밍 저장하면서 SHA-256 계산
@@ -314,7 +314,7 @@ cinetube는 이미지를 data URL(JSON)로 보내지만, 사진 원본은 크고
    - Pillow로 열기 → EXIF 추출(촬영일·카메라·렌즈·노출) → 방향 보정
    - thumb·medium·large WebP 생성, width·height·대표 색상 저장 → status=ready
    - 실패 시 cinetube 재시도 규칙(30초 → 120초 → 600초, 최대 3회), 최종 실패는 status=failed + error
-4. 화면: GET /uploads/status?ids=... 를 2초마다 조회해 파일별 상태 표시
+4. 화면: 등록 확인 목록(GET /uploads/recent)에 최근 사진을 보여 주고, 처리 중인 사진은 GET /uploads/status?ids=... 로 2초마다 확인
 ```
 
 - 앨범의 첫 사진이 준비되면 자동으로 커버 지정.

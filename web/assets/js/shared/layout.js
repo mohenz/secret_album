@@ -61,7 +61,7 @@ function menuItems() {
     items.push('separator');
   }
   if (me?.user.role === 'owner') {
-    items.push({ label: 'Upload photos', icon: 'upload', href: '/manage/upload.html' });
+    items.push({ label: 'Quick upload', icon: 'upload', href: '/manage/upload.html' });
     items.push({ label: 'Trash', icon: 'trash-2', href: '/manage/trash.html' });
     items.push({ label: 'Settings', icon: 'settings', href: '/manage/settings.html' });
     items.push('separator');

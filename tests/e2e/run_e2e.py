@@ -170,12 +170,17 @@ def run() -> int:
 
         # 4. 업로드
         page.goto(f"{BASE}/manage/upload.html?album={album_id}")
+        check("퀵 업로드 2단 화면(빠른 등록·등록 확인)", page.locator("#registerPanel").count() == 1 and page.locator("#reviewPanel").count() == 1)
+        check("앨범 미리 선택", page.locator("#album").input_value() == album_id)
         page.set_input_files("#files", [str(f) for f in files])
-        page.wait_for_function("document.querySelectorAll('.upload-item .badge-success').length === 6", timeout=60000)
-        check("사진 6장 업로드·처리 완료", True)
+        expect(page.locator(".quick-status")).to_contain_text("Done: 6 photos saved · 0 skipped · 0 failed", timeout=60000)
+        check("여러 장은 순서대로 저장 후 요약 표시", True)
+        page.wait_for_function("document.querySelectorAll('.quick-review-card .badge-success').length === 2", timeout=60000)
+        check("등록 확인: 최근 2장 표시·처리 완료", page.locator(".quick-review-card").count() == 2)
+        check("등록 확인 개수 (2/6)", "(2/6)" in page.locator("#review-title").inner_text())
         page.set_input_files("#files", [str(files[0])])
-        page.wait_for_selector("text=Skipped: the same photo")
-        check("중복 사진 건너뜀 안내", True)
+        expect(page.locator(".quick-status")).to_contain_text("Skipped: the same photo")
+        check("중복 사진 건너뜀 안내", "is-skipped" in page.locator(".quick-status").get_attribute("class"))
         # 4-1. 클립보드 이미지 붙여넣기 (Ctrl+V와 같은 paste 이벤트)
         paste_png = """(color) => {
           const canvas = document.createElement('canvas');
@@ -190,14 +195,20 @@ def run() -> int:
           }, 'image/png'));
         }"""
         page.evaluate(paste_png, "#2a9d8f")
-        page.wait_for_function("[...document.querySelectorAll('.upload-item')].some(i => /pasted-.*\.png/.test(i.textContent) && i.querySelector('.badge-success'))", timeout=30000)
-        check("클립보드 이미지 붙여넣기 업로드", True)
+        expect(page.locator(".quick-status")).to_contain_text("Saved: clipboard-", timeout=30000)
+        page.wait_for_function("document.querySelector('.quick-review-card h3')?.textContent.startsWith('clipboard-')", timeout=30000)
+        check("클립보드 이미지 붙여넣기 즉시 저장", True)
+        page.wait_for_function("document.querySelector('.quick-review-card .badge-success') && document.querySelector('.quick-review-card h3').textContent.startsWith('clipboard-') && document.querySelector('.quick-review-card').querySelector('.badge-success')", timeout=30000)
+        check("붙여넣은 사진 처리 완료 표시 (Processing → Ready)", True)
+        page.fill("#review-search", "clipboard")
+        check("등록 확인 검색", page.locator(".quick-review-card").count() == 1)
+        page.fill("#review-search", "")
+        page.click("#reviewPanel button:has-text('Today only')")
+        check("오늘 등록만 전환", page.locator("#reviewPanel button:has-text('Today only')").get_attribute("aria-pressed") == "true")
         page.evaluate("""() => { const data = new DataTransfer(); data.setData('text/plain', 'hello');
           document.body.dispatchEvent(new ClipboardEvent('paste', { clipboardData: data, bubbles: true, cancelable: true })); }""")
-        page.wait_for_selector("text=The clipboard has no image")
+        expect(page.locator(".quick-status")).to_contain_text("The clipboard has no image")
         check("이미지 없는 붙여넣기 안내", True)
-        finished_toasts = page.locator(".toast", has_text="Upload finished").count()
-        check("업로드 완료 안내는 묶음마다 한 번", finished_toasts == 2, f"{finished_toasts}개")
         page.screenshot(path=OUT / "02-upload.png", full_page=True)
 
         # 5. 앨범 감상
@@ -232,8 +243,7 @@ def run() -> int:
 
         # 6-1. 앨범 화면에서 바로 붙여넣기 → 이 앨범에 업로드
         page.evaluate(paste_png, "#e76f51")
-        page.wait_for_selector("dialog .upload-item .badge-success", timeout=30000)
-        page.click("dialog button:has-text('Close')")
+        expect(page.locator(".quick-status.floating")).to_contain_text("Saved: clipboard-", timeout=30000)
         page.wait_for_function("document.querySelectorAll('.flow-item').length === 8", timeout=15000)
         check("앨범 화면 붙여넣기 → 앨범에 추가", True)
 
@@ -307,7 +317,7 @@ def run() -> int:
         m = mobile.new_page()
         m.on("pageerror", lambda e: console_errors.append(str(e)))
         for path, name, ready in [("/", "홈(모바일)", ".hero img"), (album_url.replace(BASE, ""), "앨범(모바일)", ".flow-item"), ("/pages/albums.html", "앨범 목록(모바일)", ".cover-card"),
-                                  ("/pages/models.html", "모델 목록(모바일)", ".model-card"), ("/manage/upload.html", "업로드(모바일)", ".dropzone"),
+                                  ("/pages/models.html", "모델 목록(모바일)", ".model-card"), ("/manage/upload.html", "업로드(모바일)", ".quick-dropzone"),
                                   ("/manage/trash.html", "휴지통(모바일)", ".trash-item"), ("/manage/settings.html", "설정(모바일)", "#s-security")]:
             m.goto(BASE + path)
             m.wait_for_selector(ready)

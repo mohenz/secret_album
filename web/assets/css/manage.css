@@ -20,20 +20,45 @@
 @media (min-width: 768px) { .form-grid.two { grid-template-columns: 1fr 1fr; } }
 .row-actions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; margin-top: 16px; }
 
-/* 업로드 */
-.dropzone { display: grid; place-items: center; gap: 12px; min-height: 200px; padding: 32px 16px; border: 2px dashed var(--input); border-radius: calc(var(--radius) + 4px); text-align: center; color: var(--muted-foreground); }
-.dropzone .row-actions { justify-content: center; margin-top: 0; }
-.dropzone[data-over="true"] { border-color: var(--ring); background: color-mix(in oklch, var(--ring), transparent 90%); color: var(--foreground); }
+/* 퀵 업로드 (cinetube 갤러리 퀵등록 방식) */
+.quick-split { display: grid; gap: 24px; align-items: start; }
+@media (min-width: 1024px) { .quick-split { grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); } }
+.quick-pane { display: grid; gap: 16px; }
+.quick-pane-head h2 { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 18px; line-height: 28px; }
+.quick-pane-head .tab-count { color: var(--muted-foreground); font-weight: 500; }
+.album-picker { display: flex; gap: 8px; }
+.album-picker .select { flex: 1 1 auto; min-width: 0; }
+.quick-dropzone {
+  display: grid; place-items: center; gap: 8px; min-height: 240px; padding: 32px 16px; text-align: center; cursor: pointer;
+  border: 2px dashed var(--input); border-radius: calc(var(--radius) + 4px); color: var(--muted-foreground);
+  transition: border-color var(--motion-fast), background-color var(--motion-fast);
+}
+.quick-dropzone:hover, .quick-dropzone:focus-visible { border-color: var(--ring); background: var(--accent); }
+.quick-dropzone[data-over="true"] { border-color: var(--ring); background: color-mix(in oklch, var(--ring), transparent 88%); color: var(--foreground); }
+.quick-dropzone strong { color: var(--foreground); font-size: 16px; font-weight: 600; }
+.quick-dropzone small { font-size: 13px; line-height: 20px; max-width: 420px; }
+.quick-status { display: flex; align-items: center; gap: 8px; min-height: 44px; margin: 0; padding: 8px 14px; border-radius: var(--radius); font-size: 14px; font-weight: 600; line-height: 20px; }
+.quick-status > span { min-width: 0; overflow-wrap: anywhere; }
+.quick-status.is-uploading { background: var(--warning); color: var(--warning-foreground); }
+.quick-status.is-done { background: var(--success); color: var(--success-foreground); }
+.quick-status.is-skipped { background: transparent; color: var(--warning); border: 1px solid var(--warning); }
+.quick-status.is-error { background: var(--destructive); color: var(--destructive-foreground); }
+.quick-status.floating { position: fixed; z-index: 85; left: 50%; bottom: max(16px, env(safe-area-inset-bottom)); transform: translateX(-50%); width: min(560px, calc(100vw - 32px)); }
+.quick-review-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.quick-review-toolbar .text-meta { flex: 1 1 100%; }
+.quick-review-toolbar .input { flex: 1 1 180px; min-width: 0; }
+.quick-review-toolbar [aria-pressed="true"] { background: var(--primary); color: var(--primary-foreground); border-color: var(--primary); }
+.quick-review-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(200px, 100%), 1fr)); gap: 16px; }
+.quick-review-card { display: grid; gap: 8px; align-content: start; padding: 12px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--background); min-width: 0; }
+.quick-review-thumb { aspect-ratio: 1; overflow: hidden; border-radius: calc(var(--radius) - 4px); }
+.quick-review-thumb .photo-frame { width: 100%; height: 100%; }
+.quick-review-empty { display: grid; place-items: center; color: var(--muted-foreground); }
+.quick-review-card h3 { margin: 0; font-size: 14px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.quick-review-meta { display: flex; flex-wrap: wrap; gap: 6px; }
+.quick-review-meta .badge { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.quick-review-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.quick-review-actions > * { flex: 1 1 auto; }
 .drop-overlay { position: fixed; inset: 0; z-index: 80; display: grid; place-items: center; background: var(--overlay); color: var(--foreground); font-size: 20px; pointer-events: none; }
-.upload-list { display: grid; gap: 1px; background: var(--border); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
-.upload-item { display: grid; grid-template-columns: 48px minmax(0, 1fr) auto; align-items: center; gap: 12px; padding: 8px 12px; background: var(--card); }
-.upload-item .thumb { width: 48px; height: 48px; object-fit: cover; background: var(--placeholder); }
-.upload-item .name { font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.upload-item .sub { font-size: 13px; color: var(--muted-foreground); }
-.upload-item .sub.error { color: var(--destructive); }
-.progress { height: 4px; border-radius: 2px; background: var(--muted); overflow: hidden; margin-top: 4px; }
-.progress > span { display: block; height: 100%; background: var(--primary); width: 0; transition: width var(--motion-fast); }
-.upload-summary { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; justify-content: space-between; font-size: 14px; }
 
 /* 휴지통 */
 .trash-list { display: grid; gap: 1px; background: var(--border); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }

@@ -85,6 +85,10 @@ class GalleryLiveTests(unittest.TestCase):
         status, photos = self.owner.json("GET", f"/albums/{self.album_id}/photos")
         self.assertEqual([p["id"] for p in photos["items"]], list(reversed(ids)))
         type(self).photo_ids = ids
+        status, recent = self.owner.json("GET", "/uploads/recent?limit=2")
+        self.assertEqual(status, 200)
+        self.assertEqual(len(recent["items"]), 2)
+        self.assertEqual(recent["items"][0]["album_title"], "가을 성수 스튜디오")
 
     def test_04_tags_favorites_and_search(self):
         photo_id = self.photo_ids[0]
