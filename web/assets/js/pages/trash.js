@@ -61,8 +61,18 @@ async function emptyTrash() {
 
 function toolbar() {
   const items = [...selected.values()];
+  // 전체 선택: 일부만 고르면 중간 상태로 보인다.
+  const all = el('input', { type: 'checkbox', id: 'trash-select-all', checked: items.length > 0 && items.length === data.items.length });
+  all.indeterminate = items.length > 0 && items.length < data.items.length;
+  all.addEventListener('change', () => {
+    if (all.checked) data.items.forEach((item) => selected.set(item.id, item)); else selected.clear();
+    render();
+    document.getElementById('trash-select-all')?.focus();
+  });
   return el('div', { class: 'toolbar', role: 'toolbar', 'aria-label': 'Trash actions' },
-    el('span', { class: 'text-meta', 'aria-live': 'polite' }, items.length ? `${formatNumber(items.length)} selected` : `Kept for ${plural(data.retention_days, 'day')}`),
+    el('div', { class: 'select-all' },
+      el('label', { class: 'checkbox-row', for: 'trash-select-all' }, all, el('span', {}, 'Select all')),
+      el('span', { class: 'text-meta', 'aria-live': 'polite' }, items.length ? `${formatNumber(items.length)} selected` : `Kept for ${plural(data.retention_days, 'day')}`)),
     el('div', { class: 'row-actions' },
       button('Restore selected', { variant: 'btn-outline', iconName: 'rotate-ccw', onclick: () => restore(items) }),
       button('Delete selected', { variant: 'btn-outline', iconName: 'trash-2', onclick: () => purge(items) }),

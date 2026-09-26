@@ -284,6 +284,13 @@ def run() -> int:
         page.goto(f"{BASE}/manage/trash.html")
         page.wait_for_selector(".trash-item")
         check("휴지통 2장", page.locator(".trash-item").count() == 2)
+        page.check("#trash-select-all")
+        check("휴지통 전체 선택", page.locator(".trash-item input:checked").count() == 2 and "2 selected" in page.locator("[aria-label='Trash actions']").inner_text())
+        page.locator(".trash-item input").first.uncheck()
+        check("휴지통 일부 선택 → 전체 선택 중간 상태", page.evaluate("document.getElementById('trash-select-all').indeterminate"))
+        page.check("#trash-select-all")  # 중간 상태에서 누르면 전부 선택
+        page.uncheck("#trash-select-all")
+        check("휴지통 전체 선택 해제", page.locator(".trash-item input:checked").count() == 0)
         page.locator(".trash-item").first.locator("button:has-text('Restore')").click()
         page.wait_for_selector("text=Restored 1 item.")
         check("휴지통 복원", page.locator(".trash-item").count() == 1)
