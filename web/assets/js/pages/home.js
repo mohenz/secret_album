@@ -22,30 +22,30 @@ async function load() {
       el('div', { class: 'hero-caption' },
         el('h1', { class: 'display-title', id: 'hero-title' }, hero.title),
         el('p', { class: 'hero-meta' }, joinMeta(hero.model_name, formatDate(hero.shot_on))),
-        el('a', { class: 'hero-link', href: `/pages/album.html?id=${hero.id}` }, '앨범 보기', icon('chevron-right')))));
+        el('a', { class: 'hero-link', href: `/pages/album.html?id=${hero.id}` }, 'View album', icon('chevron-right')))));
   } else {
-    blocks.push(el('div', { class: 'page-top' }, el('h1', { class: 'visually-hidden' }, '홈'),
-      emptyState('images', '아직 등록된 모델이 없습니다', isOwner() ? '모델을 등록하고 앨범을 만든 뒤 사진을 올려 주세요.' : '공유받은 앨범이 아직 없습니다.',
+    blocks.push(el('div', { class: 'page-top' }, el('h1', { class: 'visually-hidden' }, 'Home'),
+      emptyState('images', 'No models yet', isOwner() ? 'Add a model, create an album, then upload photos.' : 'No albums have been shared with you yet.',
         isOwner() ? el('div', { class: 'row-actions' },
-          button('모델 등록', { variant: 'btn-primary', iconName: 'plus', onclick: async () => { if (await modelForm(null)) load(); } }),
-          button('앨범 만들기', { variant: 'btn-outline', onclick: async () => { const r = await albumForm(null); if (r) location.href = `/pages/album.html?id=${r.id}`; } })) : null)));
+          button('Add model', { variant: 'btn-primary', iconName: 'plus', onclick: async () => { if (await modelForm(null)) load(); } }),
+          button('Create album', { variant: 'btn-outline', onclick: async () => { const r = await albumForm(null); if (r) location.href = `/pages/album.html?id=${r.id}`; } })) : null)));
   }
   if (data.recent_albums.length) {
     blocks.push(el('section', { class: 'section', 'aria-labelledby': 'recent-title' },
-      el('div', { class: 'section-head' }, el('h2', { id: 'recent-title' }, '최근 앨범'), el('a', { href: '/pages/albums.html' }, '전체 보기')),
+      el('div', { class: 'section-head' }, el('h2', { id: 'recent-title' }, 'Recent albums'), el('a', { href: '/pages/albums.html' }, 'View all')),
       el('div', { class: 'mosaic' }, data.recent_albums.slice(0, 5).map((a, i) => albumCard(a, { sizes: i === 0 ? '(min-width: 1024px) 50vw, 100vw' : '(min-width: 1024px) 25vw, 50vw' })))));
   }
   if (data.models.length) {
     blocks.push(el('section', { class: 'section', 'aria-labelledby': 'models-title' },
-      el('div', { class: 'section-head' }, el('h2', { id: 'models-title' }, '모델'), el('a', { href: '/pages/models.html' }, '전체 보기')),
+      el('div', { class: 'section-head' }, el('h2', { id: 'models-title' }, 'Models'), el('a', { href: '/pages/models.html' }, 'View all')),
       el('div', { class: 'model-strip' }, data.models.map(modelCard))));
   }
   if (data.pause_photo) {
     const p = data.pause_photo;
-    blocks.push(el('section', { class: 'pause-photo', 'aria-label': '즐겨찾기 사진' },
-      el('a', { class: 'photo-link', href: `/pages/album.html?id=${p.album_id}&photo=${p.id}`, 'aria-label': '즐겨찾기 사진 크게 보기' }, photoFrame(p.id, { color: p.color, photo: p, sizes: '100vw', variant: 'large' }))));
+    blocks.push(el('section', { class: 'pause-photo', 'aria-label': 'Favorite photo' },
+      el('a', { class: 'photo-link', href: `/pages/album.html?id=${p.album_id}&photo=${p.id}`, 'aria-label': 'View favorite photo' }, photoFrame(p.id, { color: p.color, photo: p, sizes: '100vw', variant: 'large' }))));
   }
-  blocks.push(el('footer', { class: 'page-foot' }, 'Shift+H로 언제든 화면을 가릴 수 있습니다.'));
+  blocks.push(el('footer', { class: 'page-foot' }, 'Press Shift+H at any time to hide the screen.'));
   main.replaceChildren(...blocks);
 }
 

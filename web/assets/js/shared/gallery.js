@@ -1,6 +1,6 @@
 // 사진 카드·커버 카드·저스티파이드 흐름.
 import { mediaUrl, srcsetFor } from './api.js';
-import { el, formatDate, formatNumber, icon, joinMeta } from './ui.js';
+import { el, formatDate, formatNumber, icon, joinMeta, plural } from './ui.js';
 
 export function photoFrame(photoId, { color, alt = '', sizes = '100vw', photo, variant = 'medium', eager = false, width, height } = {}) {
   const frame = el('div', { class: 'photo-frame' });
@@ -14,7 +14,7 @@ export function photoFrame(photoId, { color, alt = '', sizes = '100vw', photo, v
     sizes: photo ? sizes : undefined,
   });
   img.addEventListener('load', () => img.classList.add('loaded'), { once: true });
-  img.addEventListener('error', () => { frame.classList.add('failed'); img.remove(); frame.append(el('span', { class: 'visually-hidden' }, '사진을 불러오지 못했습니다')); }, { once: true });
+  img.addEventListener('error', () => { frame.classList.add('failed'); img.remove(); frame.append(el('span', { class: 'visually-hidden' }, 'Could not load photo')); }, { once: true });
   frame.append(img);
   return frame;
 }
@@ -25,7 +25,7 @@ export function albumCard(album, { sizes = '(min-width: 1440px) 25vw, (min-width
     photoFrame(cover?.id, { color: album.cover?.color, photo: cover, sizes, variant: 'medium', alt: '' }),
     el('div', { class: 'cover-text' },
       el('span', { class: 'cover-title' }, album.title),
-      el('span', { class: 'cover-meta' }, joinMeta(showModel ? album.model_name : null, formatDate(album.shot_on), album.photo_count ? `${formatNumber(album.photo_count)}장` : null))));
+      el('span', { class: 'cover-meta' }, joinMeta(showModel ? album.model_name : null, formatDate(album.shot_on), album.photo_count ? plural(album.photo_count, 'photo') : null))));
 }
 
 export function modelCard(model) {
@@ -33,7 +33,7 @@ export function modelCard(model) {
     photoFrame(model.cover?.id, { color: model.cover?.color, alt: '', variant: 'medium' }),
     el('div', { class: 'cover-text' },
       el('span', { class: 'cover-title' }, model.name),
-      el('span', { class: 'cover-meta' }, joinMeta(model.album_count ? `앨범 ${formatNumber(model.album_count)}개` : null, model.photo_count ? `사진 ${formatNumber(model.photo_count)}장` : null))));
+      el('span', { class: 'cover-meta' }, joinMeta(model.album_count ? plural(model.album_count, 'album') : null, model.photo_count ? plural(model.photo_count, 'photo') : null))));
 }
 
 // ------------------------------------------------ 저스티파이드 레이아웃 계산
@@ -141,14 +141,14 @@ export class PhotoFlow {
     const node = el('div', { class: `flow-item ${row.pause ? 'pause-item' : ''}`, role: 'listitem', dataset: { id: photo.id, index: String(index) }, 'aria-selected': this.editing ? String(this.selected.has(photo.id)) : undefined });
     node.style.width = `${cell.width}px`;
     node.style.height = `${row.height}px`;
-    const label = `사진 ${formatNumber(index + 1)}${photo.status === 'processing' ? ' (처리 중)' : photo.status === 'failed' ? ' (처리 실패)' : ''}${photo.fav ? ', 즐겨찾기' : ''}`;
+    const label = `Photo ${formatNumber(index + 1)}${photo.status === 'processing' ? ' (processing)' : photo.status === 'failed' ? ' (processing failed)' : ''}${photo.fav ? ', favorite' : ''}`;
     const link = el('a', { class: 'photo-link', href: `?${new URLSearchParams({ ...Object.fromEntries(new URLSearchParams(location.search)), photo: photo.id })}`, 'aria-label': label, draggable: this.editing ? 'true' : 'false' });
     link.style.height = '100%';
     if (photo.status === 'ready') {
       link.append(photoFrame(photo.id, { color: photo.color, photo, sizes: `${Math.ceil(cell.width)}px`, variant: row.pause ? 'large' : 'medium', alt: '' }));
     } else {
       const frame = el('div', { class: 'photo-frame' });
-      frame.append(el('div', { class: 'status-mark' }, icon(photo.status === 'failed' ? 'circle-alert' : 'loader-circle', photo.status === 'failed' ? 'icon-20' : 'spin icon-20'), el('span', {}, photo.status === 'failed' ? '처리 실패' : '처리 중…')));
+      frame.append(el('div', { class: 'status-mark' }, icon(photo.status === 'failed' ? 'circle-alert' : 'loader-circle', photo.status === 'failed' ? 'icon-20' : 'spin icon-20'), el('span', {}, photo.status === 'failed' ? 'Processing failed' : 'Processing…')));
       link.append(frame);
     }
     link.addEventListener('click', (event) => {
@@ -160,7 +160,7 @@ export class PhotoFlow {
     node.append(link);
     if (photo.fav && !this.editing) node.append(el('span', { class: 'fav-mark' }, icon('heart', 'icon-18')));
     if (this.options.onToggleFavorite && !this.editing && photo.status === 'ready') {
-      const fav = el('button', { type: 'button', class: 'btn btn-icon quick-fav', 'aria-label': photo.fav ? '즐겨찾기에서 빼기' : '즐겨찾기에 추가', 'aria-pressed': String(!!photo.fav), onclick: () => this.options.onToggleFavorite(photo) }, icon('heart', 'icon-18'));
+      const fav = el('button', { type: 'button', class: 'btn btn-icon quick-fav', 'aria-label': photo.fav ? 'Remove from favorites' : 'Add to favorites', 'aria-pressed': String(!!photo.fav), onclick: () => this.options.onToggleFavorite(photo) }, icon('heart', 'icon-18'));
       node.append(fav);
     }
     if (this.editing) {

@@ -6,12 +6,12 @@ const ACCEPT = /\.(jpe?g|png|webp|heic|heif)$/i;
 const CONCURRENCY = 3;
 
 const LABEL = {
-  waiting: '대기 중',
-  uploading: '업로드 중…',
-  processing: '처리 중…',
-  done: '완료',
-  failed: '실패',
-  skipped: '건너뜀',
+  waiting: 'Waiting',
+  uploading: 'Uploading…',
+  processing: 'Processing…',
+  done: 'Done',
+  failed: 'Failed',
+  skipped: 'Skipped',
 };
 
 export class Uploader {
@@ -33,13 +33,13 @@ export class Uploader {
 
   add(fileList) {
     const albumId = this.getAlbumId();
-    if (!albumId) throw new Error('업로드할 앨범을 먼저 선택해 주세요.');
+    if (!albumId) throw new Error('Choose an album to upload to first.');
     for (const file of fileList) {
       const entry = { file, albumId, state: 'waiting', progress: 0, message: '', photoId: null };
       entry.node = this.renderEntry(entry);
       if (!ACCEPT.test(file.name) && !file.type.startsWith('image/')) {
         entry.state = 'failed';
-        entry.message = '지원하지 않는 파일 형식입니다. JPEG·PNG·WebP·HEIC 사진만 올릴 수 있습니다.';
+        entry.message = 'Unsupported file type. Only JPEG, PNG, WebP, and HEIC photos can be uploaded.';
       }
       this.entries.push(entry);
       this.list.append(entry.node);
@@ -80,8 +80,8 @@ export class Uploader {
     const total = this.entries.length;
     const finished = count('done') + count('failed') + count('skipped');
     this.summary.replaceChildren(
-      el('span', { 'data-numeric': true }, `${formatNumber(finished)} / ${formatNumber(total)} 완료`),
-      el('span', { class: 'text-meta' }, `성공 ${formatNumber(count('done'))} · 건너뜀 ${formatNumber(count('skipped'))} · 실패 ${formatNumber(count('failed'))}`));
+      el('span', { 'data-numeric': true }, `${formatNumber(finished)} of ${formatNumber(total)} finished`),
+      el('span', { class: 'text-meta' }, `Uploaded ${formatNumber(count('done'))} · Skipped ${formatNumber(count('skipped'))} · Failed ${formatNumber(count('failed'))}`));
     if (total && finished === total) this.onFinished?.(this.entries);
   }
 
@@ -121,7 +121,7 @@ export class Uploader {
       entry.message = '';
       this.update(entry);
       this.pump();
-    } }, '다시 시도'));
+    } }, 'Try again'));
   }
 
   schedulePoll() {
@@ -141,7 +141,7 @@ export class Uploader {
           const entry = chunk.find((e) => e.photoId === item.id);
           if (!entry) continue;
           if (item.status === 'ready') { entry.state = 'done'; this.update(entry); }
-          if (item.status === 'failed') { entry.state = 'failed'; entry.message = item.error || '사진을 처리하지 못했습니다. 원본을 확인해 다시 올려 주세요.'; this.update(entry); }
+          if (item.status === 'failed') { entry.state = 'failed'; entry.message = item.error || 'Could not process this photo. Check the original and upload it again.'; this.update(entry); }
         }
       } catch { /* 다음 확인 때 다시 시도 */ }
     }
@@ -162,7 +162,7 @@ export function enablePageDrop(onFiles) {
   addEventListener('dragenter', (event) => {
     if (!hasFiles(event)) return;
     depth += 1;
-    if (!overlay) { overlay = el('div', { class: 'drop-overlay', 'aria-hidden': 'true' }, el('div', {}, icon('upload', 'icon-32'), el('p', {}, '여기에 놓으면 업로드합니다'))); document.body.append(overlay); }
+    if (!overlay) { overlay = el('div', { class: 'drop-overlay', 'aria-hidden': 'true' }, el('div', {}, icon('upload', 'icon-32'), el('p', {}, 'Drop to upload'))); document.body.append(overlay); }
   });
   addEventListener('dragleave', (event) => { if (!hasFiles(event)) return; depth -= 1; if (depth <= 0) { depth = 0; overlay?.remove(); overlay = null; } });
   addEventListener('dragover', (event) => { if (hasFiles(event)) event.preventDefault(); });

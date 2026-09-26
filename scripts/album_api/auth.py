@@ -22,7 +22,7 @@ from .config import (
     RECOVERY_CODE_COUNT,
 )
 
-ISSUER = "비밀앨범"
+ISSUER = "Secret Album"
 _DUMMY_HASH: str | None = None
 
 
@@ -63,16 +63,16 @@ def _dummy_verify(password: str) -> None:
 
 def validate_new_password(password: str, login_id: str) -> None:
     if len(password) < MIN_PASSWORD_LENGTH:
-        raise AuthError(400, "weak_password", f"비밀번호는 {MIN_PASSWORD_LENGTH}자 이상이어야 합니다. 더 길게 입력해 주세요.")
+        raise AuthError(400, "weak_password", f"Password must be at least {MIN_PASSWORD_LENGTH} characters. Please enter a longer password.")
     if login_id and login_id.lower() in password.lower():
-        raise AuthError(400, "weak_password", "비밀번호에 아이디를 넣을 수 없습니다. 다른 비밀번호를 입력해 주세요.")
+        raise AuthError(400, "weak_password", "Password cannot contain your username. Please choose a different password.")
 
 
 def _fernet(data_key: str):
     from cryptography.fernet import Fernet
 
     if not data_key:
-        raise AuthError(500, "data_key_missing", "서버 암호화 키(ALBUM_DATA_KEY)가 없습니다. local/album.env를 확인해 주세요.")
+        raise AuthError(500, "data_key_missing", "The server encryption key (ALBUM_DATA_KEY) is missing. Check local/album.env.")
     return Fernet(data_key.encode("ascii"))
 
 
@@ -135,7 +135,7 @@ class RateLimiter:
             hits = [t for t in self._hits.get(key, []) if now - t < 60]
             if len(hits) >= self.per_minute:
                 self._hits[key] = hits
-                raise AuthError(429, "rate_limited", "요청이 너무 많습니다. 1분 후 다시 시도해 주세요.")
+                raise AuthError(429, "rate_limited", "Too many requests. Please try again in a minute.")
             hits.append(now)
             self._hits[key] = hits
 
@@ -171,11 +171,11 @@ def _audit(cursor, user_id, action: str, ip: str | None, detail: dict | None = N
 def create_user(cursor, login_id: str, display_name: str, password: str, role: str = "owner") -> str:
     login_id = login_id.strip()
     if not login_id or len(login_id) > 64 or not all(ch.isalnum() or ch in "._-" for ch in login_id):
-        raise AuthError(400, "invalid_login_id", "아이디는 영문·숫자·마침표·밑줄·하이픈으로 64자 이내여야 합니다.")
+        raise AuthError(400, "invalid_login_id", "Username must be up to 64 letters, numbers, periods, underscores, or hyphens.")
     validate_new_password(password, login_id)
     cursor.execute("SELECT 1 FROM users WHERE lower(login_id) = lower(%s)", (login_id,))
     if cursor.fetchone():
-        raise AuthError(409, "duplicate_login_id", "이미 사용 중인 아이디입니다. 다른 아이디를 입력해 주세요.")
+        raise AuthError(409, "duplicate_login_id", "That username is already taken. Please choose another.")
     cursor.execute(
         "INSERT INTO users(login_id, display_name, password_hash, role, password_changed_at) VALUES (%s, %s, %s, %s, now()) RETURNING id",
         (login_id, display_name.strip() or login_id, hash_password(password), role),
@@ -187,7 +187,7 @@ def create_user(cursor, login_id: str, display_name: str, password: str, role: s
 
 def login(cursor, login_id: str, password: str, ip: str | None, user_agent: str | None, max_days: int) -> tuple[str, str]:
     """비밀번호 확인 후 새 세션을 만든다. (쿠키 토큰, 세션 상태)를 돌려준다."""
-    generic = AuthError(401, "invalid_credentials", "아이디 또는 비밀번호가 맞지 않습니다. 다시 입력해 주세요.")
+    generic = AuthError(401, "invalid_credentials", "Incorrect username or password. Please try again.")
     cursor.execute(
         "SELECT id, login_id, password_hash, role, totp_enabled, failed_login_count, locked_until, disabled_at "
         "FROM users WHERE lower(login_id) = lower(%s) FOR UPDATE",
@@ -200,7 +200,7 @@ def login(cursor, login_id: str, password: str, ip: str | None, user_agent: str 
         raise generic
     if user["locked_until"] and user["locked_until"] > _now():
         minutes = max(1, int((user["locked_until"] - _now()).total_seconds() // 60) + 1)
-        raise AuthError(423, "account_locked", f"로그인 시도가 {LOGIN_MAX_FAILURES}회 실패해 잠겼습니다. {minutes}분 후 다시 시도해 주세요.")
+        raise AuthError(423, "account_locked", f"Too many failed sign-in attempts ({LOGIN_MAX_FAILURES}). Try again in {minutes} minute(s).")
     if not verify_password(user["password_hash"], password or ""):
         failures = user["failed_login_count"] + 1
         locked_until = _now() + timedelta(minutes=LOGIN_LOCK_MINUTES) if failures >= LOGIN_MAX_FAILURES else None
@@ -210,7 +210,7 @@ def login(cursor, login_id: str, password: str, ip: str | None, user_agent: str 
         )
         _audit(cursor, user["id"], "auth.login_failed", ip, {"failures": failures})
         if locked_until:
-            raise AuthError(423, "account_locked", f"로그인 시도가 {LOGIN_MAX_FAILURES}회 실패해 잠겼습니다. {LOGIN_LOCK_MINUTES}분 후 다시 시도해 주세요.")
+            raise AuthError(423, "account_locked", f"Too many failed sign-in attempts ({LOGIN_MAX_FAILURES}). Try again in {LOGIN_LOCK_MINUTES} minutes.")
         raise generic
     cursor.execute("UPDATE users SET failed_login_count = 0, locked_until = NULL, updated_at = now() WHERE id = %s", (user["id"],))
     if _hasher().check_needs_rehash(user["password_hash"]):
@@ -280,7 +280,7 @@ def verify_second_factor(cursor, session: SessionInfo, code: str, data_key: str,
                 break
     if not ok:
         _audit(cursor, session.user_id, "auth.mfa_failed", ip)
-        raise AuthError(401, "invalid_code", "인증 코드가 맞지 않습니다. 인증 앱의 6자리 숫자나 복구 코드를 다시 입력해 주세요.")
+        raise AuthError(401, "invalid_code", "Incorrect code. Enter the 6-digit code from your authenticator app or a recovery code.")
     cursor.execute("UPDATE sessions SET mfa_verified = true, last_seen_at = now(), locked_at = NULL WHERE id = %s", (session.session_id,))
     _audit(cursor, session.user_id, "auth.login", ip)
 
@@ -292,7 +292,7 @@ def begin_totp_setup(cursor, session: SessionInfo, data_key: str) -> dict:
         (encrypt_secret(data_key, secret), session.user_id),
     )
     if cursor.rowcount == 0:
-        raise AuthError(409, "totp_already_enabled", "2단계 인증이 이미 등록되어 있습니다.")
+        raise AuthError(409, "totp_already_enabled", "Two-step verification is already set up.")
     return {"secret": secret, "uri": totp_uri(secret, session.login_id)}
 
 
@@ -302,11 +302,11 @@ def enable_totp(cursor, session: SessionInfo, code: str, data_key: str, ip: str 
     cursor.execute("SELECT totp_secret, totp_enabled FROM users WHERE id = %s FOR UPDATE", (session.user_id,))
     user = cursor.fetchone()
     if user["totp_enabled"]:
-        raise AuthError(409, "totp_already_enabled", "2단계 인증이 이미 등록되어 있습니다.")
+        raise AuthError(409, "totp_already_enabled", "Two-step verification is already set up.")
     if not user["totp_secret"]:
-        raise AuthError(400, "totp_not_started", "등록용 비밀값이 없습니다. 2단계 인증 등록을 처음부터 다시 시작해 주세요.")
+        raise AuthError(400, "totp_not_started", "Setup key not found. Please restart two-step verification setup.")
     if not verify_totp(decrypt_secret(data_key, user["totp_secret"]), code):
-        raise AuthError(401, "invalid_code", "인증 코드가 맞지 않습니다. 인증 앱에 표시된 6자리 숫자를 다시 입력해 주세요.")
+        raise AuthError(401, "invalid_code", "Incorrect code. Enter the 6-digit code shown in your authenticator app.")
     codes, stored = new_recovery_codes()
     cursor.execute(
         "UPDATE users SET totp_enabled = true, recovery_codes = %s, updated_at = now() WHERE id = %s",
@@ -338,10 +338,10 @@ def unlock(cursor, session: SessionInfo, password: str, ip: str | None) -> None:
                 (timedelta(minutes=LOGIN_LOCK_MINUTES), session.user_id),
             )
             _audit(cursor, session.user_id, "auth.unlock_failed_locked", ip)
-            raise AuthError(423, "account_locked", f"잠금 해제가 {LOGIN_MAX_FAILURES}회 실패해 로그아웃했습니다. {LOGIN_LOCK_MINUTES}분 후 다시 로그인해 주세요.")
+            raise AuthError(423, "account_locked", f"Unlock failed {LOGIN_MAX_FAILURES} times, so you were signed out. Sign in again in {LOGIN_LOCK_MINUTES} minutes.")
         cursor.execute("UPDATE users SET failed_login_count = %s WHERE id = %s", (failures, session.user_id))
         _audit(cursor, session.user_id, "auth.unlock_failed", ip)
-        raise AuthError(401, "invalid_credentials", "비밀번호가 맞지 않습니다. 다시 입력해 주세요.")
+        raise AuthError(401, "invalid_credentials", "Incorrect password. Please try again.")
     cursor.execute("UPDATE users SET failed_login_count = 0 WHERE id = %s", (session.user_id,))
     cursor.execute("UPDATE sessions SET locked_at = NULL, last_seen_at = now() WHERE id = %s", (session.session_id,))
     _audit(cursor, session.user_id, "auth.unlock", ip)
@@ -359,7 +359,7 @@ def logout(cursor, session: SessionInfo, ip: str | None) -> None:
 def change_password(cursor, session: SessionInfo, current: str, new: str, ip: str | None) -> None:
     cursor.execute("SELECT password_hash FROM users WHERE id = %s FOR UPDATE", (session.user_id,))
     if not verify_password(cursor.fetchone()["password_hash"], current or ""):
-        raise AuthError(401, "invalid_credentials", "현재 비밀번호가 맞지 않습니다. 다시 입력해 주세요.")
+        raise AuthError(401, "invalid_credentials", "Current password is incorrect. Please try again.")
     validate_new_password(new or "", session.login_id)
     cursor.execute(
         "UPDATE users SET password_hash = %s, password_changed_at = now(), updated_at = now() WHERE id = %s",
@@ -392,13 +392,13 @@ def list_sessions(cursor, session: SessionInfo) -> list[dict]:
 
 def revoke_session(cursor, session: SessionInfo, short_id: str, ip: str | None) -> None:
     if not short_id or len(short_id) != 16 or not all(c in "0123456789abcdef" for c in short_id):
-        raise AuthError(400, "invalid_session", "세션 식별자가 올바르지 않습니다.")
+        raise AuthError(400, "invalid_session", "Invalid session ID.")
     cursor.execute(
         "UPDATE sessions SET revoked_at = now() WHERE user_id = %s AND left(id, 16) = %s AND revoked_at IS NULL",
         (session.user_id, short_id),
     )
     if cursor.rowcount == 0:
-        raise AuthError(404, "not_found", "해당 세션을 찾을 수 없습니다. 목록을 새로고침해 주세요.")
+        raise AuthError(404, "not_found", "Session not found. Please refresh the list.")
     _audit(cursor, session.user_id, "auth.session_revoked", ip)
 
 

@@ -13,7 +13,7 @@ function nextUrl() {
 
 function frame(title, description, ...content) {
   card.replaceChildren(
-    el('div', { class: 'auth-brand' }, '비밀앨범'),
+    el('div', { class: 'auth-brand' }, 'Secret Album'),
     el('h1', { id: 'auth-title' }, title),
     description ? el('p', { class: 'hint' }, description) : null,
     ...content);
@@ -25,7 +25,7 @@ function errorBox() {
 }
 function showError(box, error) {
   box.hidden = false;
-  box.replaceChildren(icon('circle-alert'), el('span', {}, error.message || '문제가 생겼습니다. 다시 시도해 주세요.'));
+  box.replaceChildren(icon('circle-alert'), el('span', {}, error.message || 'Something went wrong. Please try again.'));
 }
 
 function field(id, label, attrs) {
@@ -36,7 +36,7 @@ async function submitting(form, run) {
   const submit = form.querySelector('[type="submit"]');
   const box = form.querySelector('.notice');
   box.hidden = true;
-  setBusy(submit, true, '확인 중…');
+  setBusy(submit, true, 'Checking…');
   try {
     await run();
   } catch (error) {
@@ -52,28 +52,28 @@ async function submitting(form, run) {
 function showLogin() {
   const box = errorBox();
   const form = el('form', { novalidate: true, 'aria-labelledby': 'auth-title' }, box,
-    field('login-id', '아이디', { name: 'username', autocomplete: 'username', autocapitalize: 'none' }),
-    field('password', '비밀번호', { name: 'password', type: 'password', autocomplete: 'current-password' }),
-    el('button', { type: 'submit', class: 'btn btn-primary btn-block' }, '로그인'));
+    field('login-id', 'Username', { name: 'username', autocomplete: 'username', autocapitalize: 'none' }),
+    field('password', 'Password', { name: 'password', type: 'password', autocomplete: 'current-password' }),
+    el('button', { type: 'submit', class: 'btn btn-primary btn-block' }, 'Sign in'));
   form.addEventListener('submit', (event) => {
     event.preventDefault();
     const loginId = form.querySelector('#login-id').value.trim();
     const password = form.querySelector('#password').value;
-    if (!loginId || !password) { showError(box, { message: '아이디와 비밀번호를 입력해 주세요.' }); (loginId ? form.querySelector('#password') : form.querySelector('#login-id')).focus(); return; }
+    if (!loginId || !password) { showError(box, { message: 'Enter your username and password.' }); (loginId ? form.querySelector('#password') : form.querySelector('#login-id')).focus(); return; }
     submitting(form, async () => {
       const result = await api('/auth/login', { method: 'POST', body: { login_id: loginId, password }, noRedirect: true });
       route(result.state);
     });
   });
-  frame('로그인', null, form);
+  frame('Sign in', null, form);
 }
 
 function showOtp() {
   const box = errorBox();
   const form = el('form', { novalidate: true, 'aria-labelledby': 'auth-title' }, box,
-    field('otp', '인증 코드', { name: 'otp', inputmode: 'numeric', autocomplete: 'one-time-code', maxlength: '11' }),
-    el('p', { class: 'hint' }, '인증 앱의 6자리 숫자를 입력합니다. 휴대폰을 쓸 수 없으면 복구 코드(예: abcd-2345)를 입력해 주세요.'),
-    el('button', { type: 'submit', class: 'btn btn-primary btn-block' }, '인증'));
+    field('otp', 'Verification code', { name: 'otp', inputmode: 'numeric', autocomplete: 'one-time-code', maxlength: '11' }),
+    el('p', { class: 'hint' }, 'Enter the 6-digit code from your authenticator app. If you can\'t use your phone, enter a recovery code (e.g. abcd-2345).'),
+    el('button', { type: 'submit', class: 'btn btn-primary btn-block' }, 'Verify'));
   form.addEventListener('submit', (event) => {
     event.preventDefault();
     submitting(form, async () => {
@@ -81,25 +81,25 @@ function showOtp() {
       location.replace(nextUrl());
     });
   });
-  frame('2단계 인증', null, form, otherAccount());
+  frame('Two-step verification', null, form, otherAccount());
 }
 
 async function showTotpSetup() {
-  frame('2단계 인증 등록', '처음 한 번만 등록합니다.', el('p', { class: 'text-meta', role: 'status' }, '등록 정보를 만드는 중…'));
+  frame('Set up two-step verification', 'You only need to do this once.', el('p', { class: 'text-meta', role: 'status' }, 'Preparing setup…'));
   let setup;
-  try { setup = await api('/auth/totp/setup', { noRedirect: true }); } catch (error) { frame('2단계 인증 등록', null, errorAfter(error)); return; }
+  try { setup = await api('/auth/totp/setup', { noRedirect: true }); } catch (error) { frame('Set up two-step verification', null, errorAfter(error)); return; }
   const qr = el('div', { class: 'qr-box' });
   if (window.qrcode) {
     const code = window.qrcode(0, 'M');
     code.addData(setup.uri);
     code.make();
-    qr.append(el('img', { src: code.createDataURL(6, 0), alt: '인증 앱 등록용 QR 코드', width: 200, height: 200 }));
+    qr.append(el('img', { src: code.createDataURL(6, 0), alt: 'QR code for your authenticator app', width: 200, height: 200 }));
   }
-  qr.append(el('p', { class: 'hint' }, 'QR 코드를 찍을 수 없으면 아래 키를 인증 앱에 직접 입력합니다.'), el('div', { class: 'secret-text', 'aria-label': '등록 키' }, setup.secret.replace(/(.{4})/g, '$1 ').trim()));
+  qr.append(el('p', { class: 'hint' }, 'Can\'t scan the QR code? Enter this key in your authenticator app instead.'), el('div', { class: 'secret-text', 'aria-label': 'Setup key' }, setup.secret.replace(/(.{4})/g, '$1 ').trim()));
   const box = errorBox();
   const form = el('form', { novalidate: true, 'aria-labelledby': 'auth-title' }, box,
-    field('otp-setup', '인증 앱에 표시된 6자리 숫자', { name: 'otp', inputmode: 'numeric', autocomplete: 'one-time-code', maxlength: '7' }),
-    el('button', { type: 'submit', class: 'btn btn-primary btn-block' }, '등록 완료'));
+    field('otp-setup', '6-digit code from your app', { name: 'otp', inputmode: 'numeric', autocomplete: 'one-time-code', maxlength: '7' }),
+    el('button', { type: 'submit', class: 'btn btn-primary btn-block' }, 'Finish setup'));
   form.addEventListener('submit', (event) => {
     event.preventDefault();
     submitting(form, async () => {
@@ -107,16 +107,16 @@ async function showTotpSetup() {
       showRecoveryCodes(result.recovery_codes);
     });
   });
-  frame('2단계 인증 등록', 'Google Authenticator 같은 인증 앱으로 QR 코드를 찍은 뒤, 표시된 숫자를 입력합니다.', qr, form, otherAccount());
+  frame('Set up two-step verification', 'Scan the QR code with an authenticator app such as Google Authenticator, then enter the code it shows.', qr, form, otherAccount());
 }
 
 function showRecoveryCodes(codes) {
   const confirm = el('input', { type: 'checkbox', id: 'saved' });
-  const go = el('button', { type: 'button', class: 'btn btn-primary btn-block', disabled: true, onclick: () => location.replace(nextUrl()) }, '계속');
+  const go = el('button', { type: 'button', class: 'btn btn-primary btn-block', disabled: true, onclick: () => location.replace(nextUrl()) }, 'Continue');
   confirm.addEventListener('change', () => { go.disabled = !confirm.checked; });
-  frame('복구 코드', '휴대폰을 잃어버렸을 때 인증 코드 대신 쓰는 1회용 코드입니다. 지금만 표시되니 안전한 곳에 적어 두세요.',
+  frame('Recovery codes', 'One-time codes to use instead of a verification code if you lose your phone. They are shown only now, so write them down somewhere safe.',
     el('ol', { class: 'recovery-list' }, codes.map((code) => el('li', {}, code))),
-    el('label', { class: 'checkbox-row', for: 'saved' }, confirm, el('span', {}, '복구 코드를 안전한 곳에 보관했습니다.')),
+    el('label', { class: 'checkbox-row', for: 'saved' }, confirm, el('span', {}, 'I have saved my recovery codes somewhere safe.')),
     go);
   confirm.focus();
 }
@@ -124,8 +124,8 @@ function showRecoveryCodes(codes) {
 function showUnlock() {
   const box = errorBox();
   const form = el('form', { novalidate: true, 'aria-labelledby': 'auth-title' }, box,
-    field('unlock-password', '비밀번호', { name: 'password', type: 'password', autocomplete: 'current-password' }),
-    el('button', { type: 'submit', class: 'btn btn-primary btn-block' }, '잠금 해제'));
+    field('unlock-password', 'Password', { name: 'password', type: 'password', autocomplete: 'current-password' }),
+    el('button', { type: 'submit', class: 'btn btn-primary btn-block' }, 'Unlock'));
   form.addEventListener('submit', (event) => {
     event.preventDefault();
     submitting(form, async () => {
@@ -134,19 +134,19 @@ function showUnlock() {
       else route(result.state);
     });
   });
-  frame('화면이 잠겼습니다', '비밀번호를 다시 입력하면 보던 화면으로 돌아갑니다.', form, otherAccount());
+  frame('Screen locked', 'Enter your password to return to where you were.', form, otherAccount());
 }
 
 function otherAccount() {
   return el('div', { class: 'auth-links' }, el('button', { type: 'button', onclick: async () => {
     try { await api('/auth/logout', { method: 'POST', noRedirect: true }); } catch { /* 이미 끊김 */ }
     showLogin();
-  } }, '다른 계정으로 로그인'));
+  } }, 'Sign in with a different account'));
 }
 
 function errorAfter(error) {
   return el('div', {}, el('div', { class: 'notice notice-error', role: 'alert' }, icon('circle-alert'), el('span', {}, error.message)),
-    el('button', { type: 'button', class: 'btn btn-outline btn-block', onclick: start }, '다시 시도'));
+    el('button', { type: 'button', class: 'btn btn-outline btn-block', onclick: start }, 'Try again'));
 }
 
 function route(state) {
@@ -163,7 +163,7 @@ async function start() {
     route(me.state);
   } catch (error) {
     if (error instanceof ApiError && error.status === 401) showLogin();
-    else frame('연결할 수 없습니다', null, errorAfter(error));
+    else frame('Can\'t connect', null, errorAfter(error));
   }
 }
 

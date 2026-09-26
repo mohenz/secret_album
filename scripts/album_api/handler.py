@@ -119,7 +119,7 @@ class AlbumRequestHandler(BaseHTTPRequestHandler):
     def do_OPTIONS(self) -> None:
         origin = self.headers.get("Origin")
         if origin not in self.settings.web_origins:
-            self._json(HTTPStatus.FORBIDDEN, {"error": {"code": "origin_denied", "message": "허용되지 않은 출처입니다."}})
+            self._json(HTTPStatus.FORBIDDEN, {"error": {"code": "origin_denied", "message": "Origin not allowed."}})
             return
         self.send_response(HTTPStatus.NO_CONTENT)
         self._cors(origin)
@@ -143,15 +143,15 @@ class AlbumRequestHandler(BaseHTTPRequestHandler):
         try:
             origin = self.headers.get("Origin")
             if method != "GET" and origin is not None and origin not in self.settings.web_origins:
-                raise ApiError(403, "origin_denied", "허용되지 않은 출처의 요청입니다.")
+                raise ApiError(403, "origin_denied", "Request from a disallowed origin.")
             for route_method, pattern, level, fn in ROUTES:
                 match = pattern.match(path)
                 if match and route_method == method:
                     break
             else:
                 if any(pattern.match(path) for _, pattern, _, _ in ROUTES):
-                    raise ApiError(405, "method_not_allowed", "허용되지 않은 요청 방식입니다.")
-                raise ApiError(404, "not_found", "요청한 경로가 없습니다.")
+                    raise ApiError(405, "method_not_allowed", "Method not allowed.")
+                raise ApiError(404, "not_found", "Not found.")
             request = Request(self, method, path, parse_qs(parts.query), match.groups(), None, self.client_address[0])
             if level != PUBLIC:
                 request.session = self._require_session(level)
@@ -177,7 +177,7 @@ class AlbumRequestHandler(BaseHTTPRequestHandler):
             self.close_connection = True
         except Exception:
             logger.exception("unhandled error %s %s", method, path)
-            self._error(500, "server_error", "서버에서 오류가 났습니다. 잠시 후 다시 시도하고, 계속되면 관리자 로그를 확인해 주세요.")
+            self._error(500, "server_error", "Something went wrong on the server. Try again shortly; if it keeps happening, check the server logs.")
         finally:
             if not self._body_consumed and (self.headers.get("Content-Length") or "0") not in {"", "0"}:
                 # 읽지 않은 요청 본문이 남으면 다음 요청이 깨지므로 연결을 닫는다.
@@ -203,15 +203,15 @@ class AlbumRequestHandler(BaseHTTPRequestHandler):
             idle = SETTING_CACHE.get(cursor).get("session_idle_minutes") or self.settings.session_idle_minutes
             session = auth.load_session(cursor, self._session_token(), idle)
         if session is None:
-            raise ApiError(401, "unauthenticated", "로그인이 필요합니다. 다시 로그인해 주세요.")
+            raise ApiError(401, "unauthenticated", "Please sign in.")
         if level == ANY_SESSION:
             return session
         if session.state == "locked":
-            raise ApiError(401, "locked", "화면이 잠겼습니다. 비밀번호를 입력해 잠금을 해제해 주세요.")
+            raise ApiError(401, "locked", "Screen locked. Enter your password to unlock.")
         if session.state in {"mfa_required", "totp_setup_required"}:
-            raise ApiError(401, session.state, "2단계 인증을 마쳐야 합니다.")
+            raise ApiError(401, session.state, "Please complete two-step verification.")
         if level == OWNER and not session.is_owner:
-            raise ApiError(403, "forbidden", "이 작업은 소유자만 할 수 있습니다.")
+            raise ApiError(403, "forbidden", "Only the owner can do this.")
         return session
 
     # ------------------------------------------------------------ 입출력
@@ -220,18 +220,18 @@ class AlbumRequestHandler(BaseHTTPRequestHandler):
         length = int(self.headers.get("Content-Length") or 0)
         if length > MAX_JSON_BYTES:
             self.close_connection = True
-            raise ApiError(413, "body_too_large", "요청 내용이 너무 큽니다.")
+            raise ApiError(413, "body_too_large", "Request body is too large.")
         if "application/json" not in (self.headers.get("Content-Type") or ""):
             self.close_connection = True
-            raise ApiError(415, "json_required", "JSON 형식으로 보내 주세요.")
+            raise ApiError(415, "json_required", "Please send JSON.")
         raw = self.rfile.read(length) if length else b"{}"
         self._body_consumed = True
         try:
             payload = json.loads(raw or b"{}")
         except (json.JSONDecodeError, UnicodeDecodeError) as exc:
-            raise ApiError(400, "invalid_json", "요청 형식이 올바르지 않습니다.") from exc
+            raise ApiError(400, "invalid_json", "Invalid request format.") from exc
         if not isinstance(payload, dict):
-            raise ApiError(400, "invalid_json", "요청 형식이 올바르지 않습니다.")
+            raise ApiError(400, "invalid_json", "Invalid request format.")
         return payload
 
     def set_session_cookie(self, token: str | None) -> None:
@@ -382,7 +382,7 @@ def me(request: Request):
 def otp(request: Request):
     session = request.session
     if session.state != "mfa_required":
-        raise ApiError(409, "invalid_state", "2단계 인증이 필요한 상태가 아닙니다. 새로고침해 주세요.")
+        raise ApiError(409, "invalid_state", "Two-step verification is not required right now. Please refresh.")
     AlbumRequestHandler.login_limiter.check(request.ip)
     code = str(request.json().get("code") or "")
     _committing(lambda cursor: auth.verify_second_factor(cursor, session, code, request.handler.settings.data_key, request.ip))
@@ -392,7 +392,7 @@ def otp(request: Request):
 @route("GET", "/auth/totp/setup", ANY_SESSION)
 def totp_setup(request: Request):
     if request.session.state != "totp_setup_required":
-        raise ApiError(409, "invalid_state", "2단계 인증을 등록하는 단계가 아닙니다. 새로고침해 주세요.")
+        raise ApiError(409, "invalid_state", "Two-step verification setup is not in progress. Please refresh.")
     with database.transaction() as cursor:
         return auth.begin_totp_setup(cursor, request.session, request.handler.settings.data_key)
 
@@ -400,7 +400,7 @@ def totp_setup(request: Request):
 @route("POST", "/auth/totp/enable", ANY_SESSION)
 def totp_enable(request: Request):
     if request.session.state != "totp_setup_required":
-        raise ApiError(409, "invalid_state", "2단계 인증을 등록하는 단계가 아닙니다. 새로고침해 주세요.")
+        raise ApiError(409, "invalid_state", "Two-step verification setup is not in progress. Please refresh.")
     AlbumRequestHandler.login_limiter.check(request.ip)
     code = str(request.json().get("code") or "")
     codes = _committing(lambda cursor: auth.enable_totp(cursor, request.session, code, request.handler.settings.data_key, request.ip))
@@ -442,7 +442,7 @@ def change_password(request: Request):
 @route("POST", "/auth/recovery-codes", ACTIVE)
 def recovery_codes(request: Request):
     if not request.session.totp_enabled:
-        raise ApiError(409, "totp_not_enabled", "2단계 인증을 먼저 등록해 주세요.")
+        raise ApiError(409, "totp_not_enabled", "Set up two-step verification first.")
     with database.transaction() as cursor:
         return {"recovery_codes": auth.regenerate_recovery_codes(cursor, request.session, request.ip)}
 
@@ -568,7 +568,7 @@ def bulk(request: Request):
     payload = request.json()
     action = payload.get("action")
     if action not in BULK_ACTIONS:
-        raise ApiError(400, "invalid_action", "지원하지 않는 작업입니다.")
+        raise ApiError(400, "invalid_action", "Unsupported action.")
     with database.transaction() as cursor:
         return repository.bulk(cursor, request.session, action, payload.get("ids"), payload)
 
@@ -609,7 +609,7 @@ def serve_media(request: Request):
     media_root = handler.settings.media_root
     if variant == "original":
         if not (request.session.is_owner or row["can_download"]):
-            raise ApiError(403, "forbidden", "원본 다운로드 권한이 없습니다.")
+            raise ApiError(403, "forbidden", "You don't have permission to download originals.")
         path = media.original_path(media_root, str(row["id"]), row["created_at"], row["original_ext"])
         content_type = row["mime_type"]
         download = row["original_filename"] if request.arg("download") == "1" else None
@@ -619,8 +619,8 @@ def serve_media(request: Request):
         download = None
     if not path.exists():
         if row["status"] == "processing":
-            raise ApiError(404, "processing", "사진을 처리하는 중입니다. 잠시 후 다시 확인해 주세요.")
-        raise ApiError(404, "not_found", "사진 파일이 없습니다.")
+            raise ApiError(404, "processing", "This photo is still processing. Check back shortly.")
+        raise ApiError(404, "not_found", "Photo file not found.")
     handler.send_file(path, content_type, f'"{row["id"]}-{variant}-{row["sha256"][:12]}"', cache, download)
     if variant == "original" and download:
         with database.transaction() as cursor:
@@ -634,14 +634,14 @@ def serve_media(request: Request):
 def upload(request: Request):
     handler = request.handler
     album_id = request.arg("album_id")
-    filename = request.arg("filename", "사진") or "사진"
+    filename = request.arg("filename", "photo") or "photo"
     try:
         length = int(handler.headers.get("Content-Length") or 0)
     except ValueError:
         length = 0
     if not album_id:
         handler.close_connection = True
-        raise ApiError(400, "required", "업로드할 앨범을 선택해 주세요.")
+        raise ApiError(400, "required", "Choose an album to upload to.")
     try:
         received = media.receive_upload(handler.rfile, length, handler.settings)
         handler._body_consumed = True
@@ -693,7 +693,7 @@ def trash_purge(request: Request):
     kind = payload.get("type")
     everything = payload.get("all") is True
     if not everything and kind not in {"model", "album", "photo"}:
-        raise ApiError(400, "invalid_request", "삭제할 항목을 선택해 주세요.")
+        raise ApiError(400, "invalid_request", "Choose items to delete.")
     with database.transaction() as cursor:
         files = repository.purge(cursor, request.session, None if everything else kind, None if everything else payload.get("ids"))
     for item in files:
@@ -732,7 +732,7 @@ def job_stats(request: Request):
 def job_list(request: Request):
     status = request.arg("status")
     if status and status not in {"queued", "running", "succeeded", "failed", "canceled"}:
-        raise ApiError(400, "invalid_request", "작업 상태 값이 올바르지 않습니다.")
+        raise ApiError(400, "invalid_request", "Invalid job status.")
     return {"items": jobs.list_jobs(status, request.int_arg("limit", 50, 1, 500))}
 
 
@@ -740,5 +740,5 @@ def job_list(request: Request):
 def job_detail(request: Request):
     job = jobs.get_job(request.params[0])
     if job is None:
-        raise ApiError(404, "not_found", "요청한 작업이 없습니다.")
+        raise ApiError(404, "not_found", "Job not found.")
     return job

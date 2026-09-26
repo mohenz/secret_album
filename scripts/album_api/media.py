@@ -45,21 +45,21 @@ def validate_uuid(value: str) -> str:
     try:
         return str(uuid.UUID(value))
     except (ValueError, AttributeError, TypeError) as exc:
-        raise MediaError(404, "not_found", "요청한 사진이 없습니다.") from exc
+        raise MediaError(404, "not_found", "Photo not found.") from exc
 
 
 def _inside(root: Path, path: Path) -> Path:
     resolved_root = root.resolve()
     resolved = path.resolve()
     if resolved != resolved_root and resolved_root not in resolved.parents:
-        raise MediaError(400, "invalid_media_path", "허용되지 않은 파일 경로입니다.")
+        raise MediaError(400, "invalid_media_path", "File path not allowed.")
     return resolved
 
 
 def original_path(media_root: Path, photo_id: str, created_at: datetime, ext: str) -> Path:
     photo_id = validate_uuid(photo_id)
     if ext not in {"jpg", "png", "webp", "heic"}:
-        raise MediaError(400, "invalid_media_path", "허용되지 않은 파일 형식입니다.")
+        raise MediaError(400, "invalid_media_path", "File type not allowed.")
     return _inside(media_root, media_root / "originals" / f"{created_at:%Y}" / f"{created_at:%m}" / f"{photo_id}.{ext}")
 
 
@@ -70,17 +70,17 @@ def derived_dir(media_root: Path, photo_id: str) -> Path:
 
 def derived_path(media_root: Path, photo_id: str, variant: str) -> Path:
     if variant not in {name for name, _, _ in DERIVED_VARIANTS}:
-        raise MediaError(404, "not_found", "요청한 이미지 크기가 없습니다.")
+        raise MediaError(404, "not_found", "Image size not found.")
     return derived_dir(media_root, photo_id) / f"{variant}.webp"
 
 
 def receive_upload(stream, length: int, settings: Settings) -> dict:
     """요청 본문을 임시 파일로 저장하면서 SHA-256을 계산한다."""
     if length <= 0:
-        raise MediaError(411, "length_required", "파일 크기 정보가 없습니다. 다시 업로드해 주세요.")
+        raise MediaError(411, "length_required", "File size is missing. Please upload again.")
     if length > settings.max_upload_bytes:
         limit_mb = settings.max_upload_bytes // (1024 * 1024)
-        raise MediaError(413, "file_too_large", f"파일이 {limit_mb}MB를 넘어 업로드하지 못했습니다. 크기를 줄여 다시 시도해 주세요.")
+        raise MediaError(413, "file_too_large", f"File is larger than {limit_mb} MB. Reduce its size and try again.")
     settings.upload_root.mkdir(parents=True, exist_ok=True)
     temp = settings.upload_root / f"{uuid.uuid4()}.part"
     digest = hashlib.sha256()
@@ -98,10 +98,10 @@ def receive_upload(stream, length: int, settings: Settings) -> dict:
                 handle.write(chunk)
                 received += len(chunk)
         if received != length:
-            raise MediaError(400, "incomplete_upload", "업로드가 중간에 끊겼습니다. 다시 시도해 주세요.")
+            raise MediaError(400, "incomplete_upload", "The upload was interrupted. Please try again.")
         kind = detect_image_type(head)
         if kind is None:
-            raise MediaError(415, "unsupported_type", "지원하지 않는 파일 형식입니다. JPEG·PNG·WebP·HEIC 사진만 올릴 수 있습니다.")
+            raise MediaError(415, "unsupported_type", "Unsupported file type. Only JPEG, PNG, WebP, and HEIC photos can be uploaded.")
     except BaseException:
         temp.unlink(missing_ok=True)
         raise
@@ -158,7 +158,7 @@ def extract_metadata(image) -> dict:
     exposure: dict = {}
     shutter = _ratio(ifd.get(0x829A))
     if shutter:
-        exposure["shutter"] = f"1/{round(1 / shutter)}초" if shutter < 1 else f"{shutter:g}초"
+        exposure["shutter"] = f"1/{round(1 / shutter)} s" if shutter < 1 else f"{shutter:g} s"
     aperture = _ratio(ifd.get(0x829D))
     if aperture:
         exposure["aperture"] = f"f/{round(aperture, 1):g}"
@@ -188,7 +188,7 @@ def process_photo(media_root: Path, photo_id: str, created_at: datetime, ext: st
     _register_heif()
     source = original_path(media_root, photo_id, created_at, ext)
     if not source.exists():
-        raise MediaError(404, "original_missing", "원본 파일이 없습니다.")
+        raise MediaError(404, "original_missing", "Original file not found.")
     with Image.open(source) as opened:
         metadata = extract_metadata(opened)
         image = ImageOps.exif_transpose(opened)

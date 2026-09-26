@@ -25,7 +25,7 @@ def enqueue(cursor, job_type: str, payload: dict, run_after: datetime | None = N
     from psycopg.types.json import Jsonb
 
     if job_type not in JOB_HANDLERS:
-        raise ValueError(f"등록되지 않은 작업 유형입니다: {job_type}")
+        raise ValueError(f"Unknown job type: {job_type}")
     cursor.execute(
         "INSERT INTO background_jobs(job_type, payload, max_attempts, run_after) VALUES (%s, %s, %s, COALESCE(%s, now())) RETURNING id",
         (job_type, Jsonb(payload), JOB_MAX_ATTEMPTS, run_after),
@@ -94,7 +94,7 @@ def run_one(settings: Settings, worker_id: str) -> bool:
         return False
     fn = JOB_HANDLERS.get(job["job_type"])
     if fn is None:
-        fail(job, f"등록되지 않은 작업 유형: {job['job_type']}", retry=False)
+        fail(job, f"Unknown job type: {job['job_type']}", retry=False)
         return True
     try:
         result = fn(settings, job["payload"])
@@ -150,7 +150,7 @@ def list_jobs(status: str | None, limit: int) -> list[dict]:
 
 
 def get_job(job_id: str) -> dict | None:
-    job_id = repository.parse_uuid(job_id, "작업")
+    job_id = repository.parse_uuid(job_id, "job")
     with database.transaction() as cursor:
         cursor.execute("SELECT id, job_type, status, attempts, error, result, created_at, finished_at FROM background_jobs WHERE id = %s", (job_id,))
         row = cursor.fetchone()
@@ -168,7 +168,7 @@ def on_final_failure(job: dict, message: str) -> None:
         photo_id = job["payload"].get("photo_id")
         if photo_id:
             with database.transaction() as cursor:
-                repository.mark_failed(cursor, photo_id, f"사진을 처리하지 못했습니다: {message}")
+                repository.mark_failed(cursor, photo_id, f"Couldn't process this photo: {message}")
 
 
 # ---------------------------------------------------------------- 작업 핸들러
@@ -187,7 +187,7 @@ def process_photo(settings: Settings, payload: dict) -> dict:
     except OSError as exc:
         # 손상 파일·지원하지 않는 형식은 재시도해도 같다.
         if "cannot identify image file" in str(exc) or "truncated" in str(exc).lower():
-            raise PermanentJobError("사진 파일이 손상되었거나 읽을 수 없는 형식입니다. 원본을 확인해 다시 올려 주세요.") from exc
+            raise PermanentJobError("The photo file is damaged or in an unreadable format. Check the original and upload it again.") from exc
         raise
     with database.transaction() as cursor:
         repository.mark_processed(cursor, photo_id, metadata)

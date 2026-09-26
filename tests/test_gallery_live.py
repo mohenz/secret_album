@@ -39,7 +39,7 @@ class GalleryLiveTests(unittest.TestCase):
         self.assertEqual(detail["status"], "ready")
         self.assertEqual((detail["w"], detail["h"]), (1200, 800))
         self.assertEqual(detail["camera"], "TEST CAMERA X1")
-        self.assertEqual(detail["exposure"]["shutter"], "1/250초")
+        self.assertEqual(detail["exposure"]["shutter"], "1/250 s")
         self.assertTrue(detail["taken_at"].startswith("2026-09-12T14:30"))
         response, _, content = self.owner.request("GET", f"/media/{photo_id}/thumb")
         self.assertEqual(response.status, 200)

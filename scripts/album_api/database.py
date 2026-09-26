@@ -60,7 +60,7 @@ class ConnectionPool:
         try:
             return self._idle.get(timeout=self.wait_timeout)
         except queue.Empty as exc:
-            raise PoolTimeoutError("DB 연결 대기 시간을 초과했습니다. 잠시 후 다시 시도해 주세요.") from exc
+            raise PoolTimeoutError("The database is busy. Please try again shortly.") from exc
 
     def _discard(self, connection) -> None:
         with self._lock:
@@ -137,7 +137,7 @@ def ping() -> tuple[bool, str]:
     try:
         import psycopg  # noqa: F401
     except ImportError:
-        return False, "psycopg 패키지가 설치되지 않았습니다."
+        return False, "The psycopg package is not installed."
     try:
         with closing(_connect()) as connection:
             with connection.cursor() as cursor:

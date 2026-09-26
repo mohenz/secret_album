@@ -4,13 +4,13 @@ import { formDialog } from './ui.js';
 
 export function modelForm(model) {
   return formDialog({
-    title: model ? '모델 정보 수정' : '모델 등록',
+    title: model ? 'Edit model' : 'Add model',
     sheet: true,
-    submitLabel: model ? '변경사항 저장' : '모델 등록',
+    submitLabel: model ? 'Save changes' : 'Add model',
     fields: [
-      { name: 'name', label: '모델명', required: true, value: model?.name, maxlength: 120 },
-      { name: 'stage_name', label: '활동명', value: model?.stage_name, maxlength: 120 },
-      { name: 'bio', label: '소개', type: 'textarea', value: model?.bio, maxlength: 4000 },
+      { name: 'name', label: 'Name', required: true, value: model?.name, maxlength: 120 },
+      { name: 'stage_name', label: 'Stage name', value: model?.stage_name, maxlength: 120 },
+      { name: 'bio', label: 'Bio', type: 'textarea', value: model?.bio, maxlength: 4000 },
     ],
     onSubmit: (values) => (model
       ? api(`/models/${model.id}`, { method: 'PATCH', body: values })
@@ -26,15 +26,15 @@ export async function albumForm(album, { modelId } = {}) {
     return albumForm(album, { modelId: created.id });
   }
   return formDialog({
-    title: album ? '앨범 정보 수정' : '앨범 만들기',
+    title: album ? 'Edit album' : 'Create album',
     sheet: true,
-    submitLabel: album ? '변경사항 저장' : '앨범 만들기',
+    submitLabel: album ? 'Save changes' : 'Create album',
     fields: [
-      { name: 'title', label: '앨범명', required: true, value: album?.title, maxlength: 200 },
-      { name: 'model_id', label: '모델', type: 'select', required: true, value: album?.model_id || modelId, options: models.map((m) => ({ value: m.id, label: m.name })) },
-      { name: 'shot_on', label: '촬영일', type: 'date', value: album?.shot_on || '' },
-      { name: 'location', label: '촬영 장소', value: album?.location, maxlength: 200, hint: '예: 서울 성동구 성수동' },
-      { name: 'description', label: '설명', type: 'textarea', value: album?.description, maxlength: 8000 },
+      { name: 'title', label: 'Title', required: true, value: album?.title, maxlength: 200 },
+      { name: 'model_id', label: 'Model', type: 'select', required: true, value: album?.model_id || modelId, options: models.map((m) => ({ value: m.id, label: m.name })) },
+      { name: 'shot_on', label: 'Shoot date', type: 'date', value: album?.shot_on || '' },
+      { name: 'location', label: 'Location', value: album?.location, maxlength: 200, hint: 'e.g. Seongsu-dong, Seoul' },
+      { name: 'description', label: 'Description', type: 'textarea', value: album?.description, maxlength: 8000 },
     ],
     onSubmit: (values) => {
       const body = { ...values, shot_on: values.shot_on || null };

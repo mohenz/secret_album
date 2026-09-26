@@ -3,7 +3,7 @@ import { api } from '../shared/api.js';
 import { albumForm } from '../shared/forms.js';
 import { boot } from '../shared/layout.js';
 import { enablePageDrop, Uploader } from '../shared/uploader.js';
-import { button, el, errorState, icon, joinMeta, loadingState, toast } from '../shared/ui.js';
+import { button, el, errorState, icon, joinMeta, loadingState, plural, toast } from '../shared/ui.js';
 
 const main = document.getElementById('main');
 await boot({ ownerOnly: true });
@@ -17,7 +17,7 @@ const albumError = el('p', { class: 'field-error', id: 'album-error' });
 
 async function loadAlbums(selectId) {
   albums = (await api('/albums?sort=added_desc&limit=1000')).items;
-  albumSelect.replaceChildren(el('option', { value: '' }, '앨범을 선택해 주세요'),
+  albumSelect.replaceChildren(el('option', { value: '' }, 'Choose an album'),
     ...albums.map((a) => el('option', { value: a.id }, joinMeta(a.title, a.model_name))));
   albumSelect.value = selectId && albums.some((a) => a.id === selectId) ? selectId : '';
 }
@@ -25,13 +25,13 @@ async function loadAlbums(selectId) {
 const fileInput = el('input', { type: 'file', id: 'files', multiple: true, accept: 'image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif', class: 'visually-hidden' });
 const dropzone = el('div', { class: 'dropzone' },
   icon('upload', 'icon-32'),
-  el('p', { class: 'text-card' }, '사진을 여기에 끌어 놓으세요'),
-  el('p', { class: 'text-ui' }, 'JPEG·PNG·WebP·HEIC, 파일당 200MB까지'),
-  el('label', { class: 'btn btn-primary', for: 'files' }, icon('images'), '파일 선택'),
+  el('p', { class: 'text-card' }, 'Drag photos here'),
+  el('p', { class: 'text-ui' }, 'JPEG, PNG, WebP, or HEIC, up to 200 MB each'),
+  el('label', { class: 'btn btn-primary', for: 'files' }, icon('images'), 'Choose files'),
   fileInput);
-const list = el('div', { class: 'upload-list', role: 'list', 'aria-label': '업로드 목록' });
+const list = el('div', { class: 'upload-list', role: 'list', 'aria-label': 'Upload queue' });
 const summary = el('div', { class: 'upload-summary', role: 'status' });
-const doneLink = el('a', { class: 'btn btn-outline', hidden: true }, '앨범 보기');
+const doneLink = el('a', { class: 'btn btn-outline', hidden: true }, 'View album');
 
 const uploader = new Uploader({
   list, summary, getAlbumId: () => albumSelect.value,
@@ -39,7 +39,7 @@ const uploader = new Uploader({
     doneLink.hidden = false;
     doneLink.href = `/pages/album.html?id=${albumSelect.value}`;
     const ok = entries.filter((e) => e.state === 'done').length;
-    toast(`업로드를 마쳤습니다. 성공 ${ok}장`, { type: 'success' });
+    toast(`Upload finished. ${plural(ok, 'photo')} added.`, { type: 'success' });
   },
 });
 
@@ -48,7 +48,7 @@ function addFiles(files) {
   albumSelect.removeAttribute('aria-invalid');
   if (!albumSelect.value) {
     albumSelect.setAttribute('aria-invalid', 'true');
-    albumError.replaceChildren(icon('circle-alert'), el('span', {}, '업로드할 앨범을 먼저 선택해 주세요.'));
+    albumError.replaceChildren(icon('circle-alert'), el('span', {}, 'Choose an album to upload to first.'));
     albumSelect.focus();
     return;
   }
@@ -65,14 +65,14 @@ enablePageDrop(addFiles);
 try {
   await loadAlbums(preset);
   main.replaceChildren(
-    el('div', { class: 'page-head' }, el('h1', {}, '사진 업로드')),
+    el('div', { class: 'page-head' }, el('h1', {}, 'Upload photos')),
     el('section', { class: 'panel', 'aria-labelledby': 'target-title' },
-      el('h2', { id: 'target-title' }, '올릴 앨범'),
-      el('p', { class: 'panel-desc' }, '앨범을 고르면 그 앨범의 모델로 사진이 분류됩니다.'),
-      el('div', { class: 'field' }, el('label', { class: 'label', for: 'album' }, '앨범'), albumSelect, albumError),
-      el('div', { class: 'row-actions' }, button('새 앨범 만들기', { variant: 'btn-outline', iconName: 'plus', onclick: async () => {
+      el('h2', { id: 'target-title' }, 'Destination album'),
+      el('p', { class: 'panel-desc' }, 'Photos are filed under the album\'s model.'),
+      el('div', { class: 'field' }, el('label', { class: 'label', for: 'album' }, 'Album'), albumSelect, albumError),
+      el('div', { class: 'row-actions' }, button('Create new album', { variant: 'btn-outline', iconName: 'plus', onclick: async () => {
         const created = await albumForm(null);
-        if (created) { await loadAlbums(created.id); toast('앨범을 만들었습니다.', { type: 'success' }); }
+        if (created) { await loadAlbums(created.id); toast('Album created.', { type: 'success' }); }
       } }))),
     dropzone,
     el('div', { class: 'upload-summary-row toolbar' }, summary, doneLink),

@@ -43,11 +43,11 @@ export function openViewer(config) {
     preload: [2, 2],
     wheelToZoom: true,
     returnFocus: true,
-    closeTitle: '닫기 (Esc)',
-    zoomTitle: '확대',
-    arrowPrevTitle: '이전 사진',
-    arrowNextTitle: '다음 사진',
-    errorMsg: '사진을 불러오지 못했습니다.',
+    closeTitle: 'Close (Esc)',
+    zoomTitle: 'Zoom',
+    arrowPrevTitle: 'Previous photo',
+    arrowNextTitle: 'Next photo',
+    errorMsg: 'Could not load this photo.',
     indexIndicatorSep: ' / ',
     counter: true,
     clickToCloseNonZoomable: false,
@@ -89,7 +89,7 @@ export function openViewer(config) {
       pswp.next();
     }, options.interval * 1000);
     status.hidden = false;
-    status.textContent = `슬라이드쇼 재생 중 · ${options.interval}초 간격 · Space로 멈춤`;
+    status.textContent = `Slideshow playing · every ${options.interval} s · Space to pause`;
     updateButtons();
     showControls();
   }
@@ -103,7 +103,7 @@ export function openViewer(config) {
       photo.fav = next;
       config.onFavorite?.(photo);
       updateButtons();
-      toast(next ? '즐겨찾기에 추가했습니다.' : '즐겨찾기에서 뺐습니다.', { type: 'success', duration: 2500 });
+      toast(next ? 'Added to favorites.' : 'Removed from favorites.', { type: 'success', duration: 2500 });
     } catch (error) { toastError(error); }
   }
 
@@ -112,13 +112,13 @@ export function openViewer(config) {
     const fav = pswp.element.querySelector('.viewer-fav');
     if (fav) {
       fav.setAttribute('aria-pressed', String(!!slide()?.fav));
-      fav.setAttribute('aria-label', slide()?.fav ? '즐겨찾기에서 빼기 (F)' : '즐겨찾기에 추가 (F)');
+      fav.setAttribute('aria-label', slide()?.fav ? 'Remove from favorites (F)' : 'Add to favorites (F)');
       fav.title = fav.getAttribute('aria-label');
     }
     const play = pswp.element.querySelector('.viewer-play');
     if (play) {
       play.innerHTML = svgHtml(playing ? 'pause' : 'play');
-      play.setAttribute('aria-label', playing ? '슬라이드쇼 멈춤 (Space)' : '슬라이드쇼 시작 (Space)');
+      play.setAttribute('aria-label', playing ? 'Pause slideshow (Space)' : 'Start slideshow (Space)');
       play.title = play.getAttribute('aria-label');
     }
     const info = pswp.element.querySelector('.viewer-info-btn');
@@ -127,9 +127,9 @@ export function openViewer(config) {
 
   async function toggleInfo() {
     if (infoPanel) { closeInfo(); return; }
-    infoPanel = el('aside', { class: 'viewer-info', 'aria-label': '사진 정보', tabindex: '-1' },
-      el('button', { type: 'button', class: 'btn btn-icon close', 'aria-label': '정보 닫기 (I)', onclick: closeInfo }, icon('x', 'icon-20')),
-      el('p', { class: 'text-ui' }, '불러오는 중…'));
+    infoPanel = el('aside', { class: 'viewer-info', 'aria-label': 'Photo details', tabindex: '-1' },
+      el('button', { type: 'button', class: 'btn btn-icon close', 'aria-label': 'Close details (I)', onclick: closeInfo }, icon('x', 'icon-20')),
+      el('p', { class: 'text-ui' }, 'Loading…'));
     pswp.element.append(infoPanel);
     pswp.element.classList.add('info-open');
     updateButtons();
@@ -153,17 +153,17 @@ export function openViewer(config) {
     if (panel !== infoPanel || slide().id !== photo.id) return;
     const exposure = detail.exposure || {};
     const rows = [
-      ['촬영일', formatDateTime(detail.taken_at) || '정보 없음'],
-      ['모델', detail.model_name],
-      ['앨범', detail.album_title],
-      ['카메라', joinMeta(detail.camera, detail.lens) || '정보 없음'],
-      ['노출', joinMeta(exposure.shutter, exposure.aperture, exposure.iso ? `ISO ${exposure.iso}` : null, exposure.focal) || '정보 없음'],
-      ['해상도', `${detail.w} × ${detail.h}`],
-      ['파일', joinMeta(config.owner ? detail.original_filename : null, formatBytes(detail.byte_size))],
-      ['태그', detail.tags.length ? detail.tags.join(', ') : '없음'],
-      ['메모', detail.caption || '없음'],
+      ['Taken', formatDateTime(detail.taken_at) || 'Unknown'],
+      ['Model', detail.model_name],
+      ['Album', detail.album_title],
+      ['Camera', joinMeta(detail.camera, detail.lens) || 'Unknown'],
+      ['Exposure', joinMeta(exposure.shutter, exposure.aperture, exposure.iso ? `ISO ${exposure.iso}` : null, exposure.focal) || 'Unknown'],
+      ['Resolution', `${detail.w} × ${detail.h}`],
+      ['File', joinMeta(config.owner ? detail.original_filename : null, formatBytes(detail.byte_size))],
+      ['Tags', detail.tags.length ? detail.tags.join(', ') : 'None'],
+      ['Note', detail.caption || 'None'],
     ];
-    const content = [el('h2', { class: 'text-card' }, '사진 정보'),
+    const content = [el('h2', { class: 'text-card' }, 'Photo details'),
       el('dl', {}, rows.flatMap(([k, v]) => [el('dt', {}, k), el('dd', {}, v)]))];
     if (config.owner) content.push(editForm(detail));
     panel.replaceChildren(panel.querySelector('.close') || el('span'), ...content);
@@ -175,23 +175,23 @@ export function openViewer(config) {
     const tags = el('input', { class: 'input', id: tagsId, value: detail.tags.join(', '), autocomplete: 'off', spellcheck: 'false' });
     const caption = el('textarea', { class: 'textarea', id: captionId, maxlength: '2000' });
     caption.value = detail.caption || '';
-    const save = el('button', { type: 'submit', class: 'btn btn-primary' }, '변경사항 저장');
+    const save = el('button', { type: 'submit', class: 'btn btn-primary' }, 'Save changes');
     const form = el('form', { class: 'form-grid', onsubmit: async (event) => {
       event.preventDefault();
       save.disabled = true;
       try {
         await api(`/photos/${detail.id}`, { method: 'PATCH', body: { tags: tags.value.split(',').map((t) => t.trim()).filter(Boolean), caption: caption.value } });
-        toast('사진 정보를 저장했습니다.', { type: 'success', duration: 2500 });
+        toast('Photo details saved.', { type: 'success', duration: 2500 });
         await renderInfo();
       } catch (error) { toastError(error); save.disabled = false; }
     } },
-    el('div', { class: 'field' }, el('label', { class: 'label', for: tagsId }, '태그'), tags, el('p', { class: 'hint' }, '쉼표로 구분합니다. 예: 야외, 흑백')),
-    el('div', { class: 'field' }, el('label', { class: 'label', for: captionId }, '메모'), caption),
+    el('div', { class: 'field' }, el('label', { class: 'label', for: tagsId }, 'Tags'), tags, el('p', { class: 'hint' }, 'Separate with commas, e.g. outdoor, black and white')),
+    el('div', { class: 'field' }, el('label', { class: 'label', for: captionId }, 'Note'), caption),
     save,
     el('div', { class: 'row-actions' },
-      el('button', { type: 'button', class: 'btn btn-outline', onclick: () => ownerAction('set_album_cover', '앨범 커버로 지정했습니다.') }, '앨범 커버로 지정'),
-      el('button', { type: 'button', class: 'btn btn-outline', onclick: () => ownerAction('set_model_cover', '모델 대표 사진으로 지정했습니다.') }, '모델 대표 사진으로 지정'),
-      el('button', { type: 'button', class: 'btn btn-outline', onclick: () => ownerAction('trash', '휴지통으로 옮겼습니다.') }, icon('trash-2'), '휴지통으로 이동')));
+      el('button', { type: 'button', class: 'btn btn-outline', onclick: () => ownerAction('set_album_cover', 'Set as album cover.') }, 'Set as album cover'),
+      el('button', { type: 'button', class: 'btn btn-outline', onclick: () => ownerAction('set_model_cover', 'Set as model cover.') }, 'Set as model cover'),
+      el('button', { type: 'button', class: 'btn btn-outline', onclick: () => ownerAction('trash', 'Moved to trash.') }, icon('trash-2'), 'Move to trash')));
     return el('div', {}, el('div', { class: 'divider', role: 'separator' }), form);
   }
 
@@ -202,10 +202,10 @@ export function openViewer(config) {
       if (action === 'trash') {
         config.onOwnerAction?.(action, photo);
         const undo = async () => {
-          try { await api('/trash/restore', { method: 'POST', body: { type: 'photo', ids: [photo.id] } }); config.onOwnerAction?.('restore', photo); toast('되돌렸습니다.', { type: 'success' }); } catch (error) { toastError(error); }
+          try { await api('/trash/restore', { method: 'POST', body: { type: 'photo', ids: [photo.id] } }); config.onOwnerAction?.('restore', photo); toast('Restored.', { type: 'success' }); } catch (error) { toastError(error); }
         };
         pswp.close();
-        toast(message, { type: 'success', actionLabel: '실행 취소', onAction: undo, duration: 5000 });
+        toast(message, { type: 'success', actionLabel: 'Undo', onAction: undo, duration: 5000 });
         return;
       }
       config.onOwnerAction?.(action, photo);
@@ -214,11 +214,11 @@ export function openViewer(config) {
   }
 
   function showHelp() {
-    const list = [['←  →', '이전·다음 사진'], ['Space', '슬라이드쇼 재생·멈춤'], ['F', '즐겨찾기'], ['I', '사진 정보'], ['Esc', '닫기'], ['Shift+H', '화면 가리기'], ['?', '단축키 안내']];
+    const list = [['←  →', 'Previous / next photo'], ['Space', 'Play / pause slideshow'], ['F', 'Favorite'], ['I', 'Photo details'], ['Esc', 'Close'], ['Shift+H', 'Hide screen'], ['?', 'Keyboard shortcuts']];
     const dialog = el('dialog', { class: 'dialog', 'aria-labelledby': 'help-title' },
-      el('div', { class: 'dialog-body' }, el('h2', { class: 'dialog-title', id: 'help-title' }, '단축키'),
+      el('div', { class: 'dialog-body' }, el('h2', { class: 'dialog-title', id: 'help-title' }, 'Keyboard shortcuts'),
         el('div', { class: 'shortcut-list' }, list.flatMap(([k, v]) => [el('kbd', {}, k), el('span', {}, v)])),
-        el('div', { class: 'dialog-actions' }, el('button', { type: 'button', class: 'btn btn-primary', onclick: () => dialog.close() }, '닫기'))));
+        el('div', { class: 'dialog-actions' }, el('button', { type: 'button', class: 'btn btn-primary', onclick: () => dialog.close() }, 'Close'))));
     showDialog(dialog);
     dialog.querySelector('button').focus();
   }
@@ -229,11 +229,11 @@ export function openViewer(config) {
       name, order, isButton: true, html: svgHtml(iconName), title: label, ariaLabel: label, className: `viewer-btn ${className}`,
       onClick: (event) => { event.stopPropagation(); onClick(); showControls(); },
     });
-    register('favorite', 8, 'heart', '즐겨찾기에 추가 (F)', toggleFavorite, 'viewer-fav');
-    register('slideshow', 9, 'play', '슬라이드쇼 시작 (Space)', toggleSlideshow, 'viewer-play');
-    register('info', 10, 'info', '사진 정보 (I)', toggleInfo, 'viewer-info-btn');
+    register('favorite', 8, 'heart', 'Add to favorites (F)', toggleFavorite, 'viewer-fav');
+    register('slideshow', 9, 'play', 'Start slideshow (Space)', toggleSlideshow, 'viewer-play');
+    register('info', 10, 'info', 'Photo details (I)', toggleInfo, 'viewer-info-btn');
     if (config.owner || config.canDownload) {
-      register('download', 11, 'download', '원본 내려받기', () => { location.href = `${mediaUrl(slide().id, 'original')}?download=1`; }, 'viewer-download');
+      register('download', 11, 'download', 'Download original', () => { location.href = `${mediaUrl(slide().id, 'original')}?download=1`; }, 'viewer-download');
     }
   });
 

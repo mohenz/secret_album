@@ -48,7 +48,7 @@ export function setBusy(buttonEl, busy, busyLabel) {
   if (busy) {
     buttonEl.dataset.label = buttonEl.textContent;
     buttonEl.disabled = true;
-    buttonEl.replaceChildren(icon('loader-circle', 'spin'), el('span', {}, busyLabel || '처리 중…'));
+    buttonEl.replaceChildren(icon('loader-circle', 'spin'), el('span', {}, busyLabel || 'Working…'));
   } else {
     buttonEl.disabled = false;
     if (buttonEl.dataset.label !== undefined) buttonEl.replaceChildren(el('span', {}, buttonEl.dataset.label));
@@ -76,7 +76,7 @@ export function toast(message, { type = 'info', actionLabel, onAction, duration 
 
 export function toastError(error) {
   if (error?.name === 'AbortError') return;
-  toast(error?.message || '문제가 생겼습니다. 다시 시도해 주세요.', { type: 'error', duration: 8000 });
+  toast(error?.message || 'Something went wrong. Please try again.', { type: 'error', duration: 8000 });
 }
 
 // ------------------------------------------------ Dialog (네이티브 <dialog>: 포커스 가두기·Esc 닫기, 닫힌 뒤 실행 버튼으로 포커스 복귀)
@@ -94,7 +94,7 @@ export function showDialog(dialog) {
   return dialog;
 }
 
-export function confirmDialog({ title, description, confirmLabel, destructive = false, cancelLabel = '취소' }) {
+export function confirmDialog({ title, description, confirmLabel, destructive = false, cancelLabel = 'Cancel' }) {
   return new Promise((resolve) => {
     const titleId = `d-${crypto.randomUUID()}`;
     const confirmBtn = button(confirmLabel, { variant: destructive ? 'btn-destructive' : 'btn-primary', onclick: () => { dialog.close('ok'); } });
@@ -146,7 +146,7 @@ export function formDialog({ title, description, fields, submitLabel, onSubmit, 
       description ? el('p', { class: 'dialog-description' }, description) : null,
       formError,
       ...fieldNodes,
-      el('div', { class: 'dialog-actions' }, button('취소', { variant: 'btn-outline', onclick: () => dialog.close('cancel') }), submit));
+      el('div', { class: 'dialog-actions' }, button('Cancel', { variant: 'btn-outline', onclick: () => dialog.close('cancel') }), submit));
     const dialog = el('dialog', { class: `dialog ${sheet ? 'sheet' : ''}`, 'aria-labelledby': titleId }, form);
     let result = null;
     form.addEventListener('submit', async (event) => {
@@ -158,18 +158,18 @@ export function formDialog({ title, description, fields, submitLabel, onSubmit, 
       if (missing) {
         const control = inputs[missing.name];
         control.setAttribute('aria-invalid', 'true');
-        document.getElementById(control.getAttribute('aria-describedby')).textContent = `${missing.label}을(를) 입력해 주세요.`;
+        document.getElementById(control.getAttribute('aria-describedby')).textContent = `Please enter ${missing.label.toLowerCase()}.`;
         control.focus();
         return;
       }
       const values = Object.fromEntries(Object.entries(inputs).map(([k, c]) => [k, c.value.trim()]));
-      setBusy(submit, true, '저장 중…');
+      setBusy(submit, true, 'Saving…');
       try {
         result = await onSubmit(values);
         dialog.close('ok');
       } catch (error) {
         formError.hidden = false;
-        formError.replaceChildren(icon('circle-alert'), el('span', {}, error.message || '저장하지 못했습니다. 다시 시도해 주세요.'));
+        formError.replaceChildren(icon('circle-alert'), el('span', {}, error.message || 'Could not save. Please try again.'));
         setBusy(submit, false);
         form.querySelector('[aria-invalid="true"], input, textarea, select')?.focus();
       }
@@ -222,10 +222,10 @@ export function openMenu(anchor, items) {
   return menu;
 }
 
-// ------------------------------------------------ 서식 (Intl, ko-KR)
-const dateFormat = new Intl.DateTimeFormat('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' });
-const dateTimeFormat = new Intl.DateTimeFormat('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' });
-const numberFormat = new Intl.NumberFormat('ko-KR');
+// ------------------------------------------------ 서식 (Intl, en-US)
+const dateFormat = new Intl.DateTimeFormat('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+const dateTimeFormat = new Intl.DateTimeFormat('en-US', { year: 'numeric', month: 'long', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+const numberFormat = new Intl.NumberFormat('en-US');
 
 export function formatDate(value) {
   if (!value) return '';
@@ -238,12 +238,13 @@ export function formatDateTime(value) {
   return Number.isNaN(date.getTime()) ? '' : dateTimeFormat.format(date);
 }
 export const formatNumber = (value) => numberFormat.format(value ?? 0);
+export const plural = (count, word, words = `${word}s`) => `${numberFormat.format(count ?? 0)} ${count === 1 ? word : words}`;
 export function formatBytes(bytes) {
   const units = ['B', 'KB', 'MB', 'GB', 'TB'];
   let value = bytes || 0;
   let unit = 0;
   while (value >= 1024 && unit < units.length - 1) { value /= 1024; unit += 1; }
-  return `${new Intl.NumberFormat('ko-KR', { maximumFractionDigits: unit >= 3 ? 1 : 0 }).format(value)}${units[unit]}`;
+  return `${new Intl.NumberFormat('en-US', { maximumFractionDigits: unit >= 3 ? 1 : 0 }).format(value)} ${units[unit]}`;
 }
 export function joinMeta(...parts) {
   return parts.filter(Boolean).join(' · ');
@@ -258,13 +259,13 @@ export function emptyState(iconName, title, description, action) {
   return el('div', { class: 'empty' }, icon(iconName, 'icon-32'), el('p', { class: 'text-card' }, title), description ? el('p', { class: 'text-ui' }, description) : null, action || null);
 }
 
-export function loadingState(label = '불러오는 중…') {
+export function loadingState(label = 'Loading…') {
   return el('div', { class: 'loading', role: 'status' }, icon('loader-circle', 'spin icon-20'), el('span', {}, label));
 }
 
 export function errorState(error, retry) {
   return el('div', { class: 'empty', role: 'alert' }, icon('circle-alert', 'icon-32'),
-    el('p', { class: 'text-card' }, '내용을 불러오지 못했습니다'),
-    el('p', { class: 'text-ui' }, error?.message || '네트워크 연결을 확인한 뒤 다시 시도해 주세요.'),
-    retry ? button('다시 시도', { variant: 'btn-outline', iconName: 'refresh-cw', onclick: retry }) : null);
+    el('p', { class: 'text-card' }, 'Could not load this page'),
+    el('p', { class: 'text-ui' }, error?.message || 'Check your network connection and try again.'),
+    retry ? button('Try again', { variant: 'btn-outline', iconName: 'refresh-cw', onclick: retry }) : null);
 }

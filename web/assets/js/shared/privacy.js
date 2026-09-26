@@ -14,11 +14,11 @@ export function isShielded() {
 
 export function setShield(on) {
   if (!shield) {
-    shield = el('div', { class: 'privacy-shield', hidden: true, role: 'dialog', 'aria-modal': 'true', 'aria-label': '화면 가림' },
+    shield = el('div', { class: 'privacy-shield', hidden: true, role: 'dialog', 'aria-modal': 'true', 'aria-label': 'Screen hidden' },
       el('div', { class: 'inner' },
-        el('div', { class: 'brand-mark' }, '비밀앨범'),
-        el('p', {}, '화면을 가렸습니다. Shift+H 또는 아래 버튼으로 다시 표시합니다.'),
-        el('button', { type: 'button', class: 'btn btn-outline', onclick: () => setShield(false) }, '화면 다시 표시')));
+        el('div', { class: 'brand-mark' }, 'Secret Album'),
+        el('p', {}, 'The screen is hidden. Press Shift+H or use the button below to show it again.'),
+        el('button', { type: 'button', class: 'btn btn-outline', onclick: () => setShield(false) }, 'Show screen')));
     document.body.append(shield);
   }
   shield.hidden = !on;
@@ -38,7 +38,7 @@ function resetIdle() {
   closeWarning = null;
   if (idleMs <= 0) return;
   warnTimer = setTimeout(() => {
-    closeWarning = toast('30초 뒤 화면이 잠깁니다. 계속 보려면 화면을 움직여 주세요.', { duration: 30000 });
+    closeWarning = toast('The screen will lock in 30 seconds. Move the mouse or press a key to stay.', { duration: 30000 });
   }, Math.max(0, idleMs - 30000));
   idleTimer = setTimeout(lockNow, idleMs);
 }

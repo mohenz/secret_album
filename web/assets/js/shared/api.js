@@ -33,7 +33,7 @@ export async function api(path, { method = 'GET', body, signal, noRedirect = fal
     response = await fetch(`${API_BASE}${path}`, init);
   } catch (error) {
     if (error.name === 'AbortError') throw error;
-    throw new ApiError(0, 'network', '서버에 연결하지 못했습니다. 네트워크 연결과 서버 실행 상태를 확인해 주세요.');
+    throw new ApiError(0, 'network', 'Could not reach the server. Check your network connection and that the server is running.');
   }
   const type = response.headers.get('Content-Type') || '';
   const payload = type.includes('application/json') ? await response.json() : null;
@@ -44,7 +44,7 @@ export async function api(path, { method = 'GET', body, signal, noRedirect = fal
       goLogin(code);
       return new Promise(() => {});
     }
-    throw new ApiError(response.status, code, error.message || '요청을 처리하지 못했습니다. 잠시 후 다시 시도해 주세요.', error.detail);
+    throw new ApiError(response.status, code, error.message || 'The request failed. Please try again shortly.', error.detail);
   }
   return payload;
 }
@@ -74,14 +74,14 @@ export function uploadFile(file, albumId, onProgress) {
     xhr.withCredentials = true;
     xhr.setRequestHeader('Content-Type', 'application/octet-stream');
     xhr.upload.onprogress = (event) => { if (event.lengthComputable) onProgress?.(event.loaded / event.total); };
-    xhr.onerror = () => reject(new ApiError(0, 'network', '업로드가 중간에 끊겼습니다. 네트워크를 확인한 뒤 다시 시도해 주세요.'));
+    xhr.onerror = () => reject(new ApiError(0, 'network', 'The upload was interrupted. Check your network and try again.'));
     xhr.onload = () => {
       let payload = null;
       try { payload = JSON.parse(xhr.responseText); } catch { /* 비어 있는 응답 */ }
       if (xhr.status >= 200 && xhr.status < 300) return resolve(payload);
       const error = payload?.error || {};
       if (xhr.status === 401 && AUTH_CODES.has(error.code)) { goLogin(error.code); return; }
-      reject(new ApiError(xhr.status, error.code || 'error', error.message || '업로드하지 못했습니다. 다시 시도해 주세요.', error.detail));
+      reject(new ApiError(xhr.status, error.code || 'error', error.message || 'Upload failed. Please try again.', error.detail));
     };
     xhr.send(file);
   });

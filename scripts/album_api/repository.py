@@ -25,7 +25,7 @@ POSITION_STEP = 1024
 
 
 class NotFound(Exception):
-    def __init__(self, message: str = "요청한 항목이 없습니다. 목록을 새로고침해 주세요.") -> None:
+    def __init__(self, message: str = "Item not found. Please refresh the list.") -> None:
         super().__init__(message)
         self.message = message
 
@@ -47,24 +47,24 @@ class Conflict(Exception):
 
 # ---------------------------------------------------------------- 공통
 
-def parse_uuid(value: Any, label: str = "항목") -> str:
+def parse_uuid(value: Any, label: str = "item") -> str:
     try:
         return str(uuid.UUID(str(value)))
     except (ValueError, TypeError) as exc:
-        raise NotFound(f"요청한 {label}이(가) 없습니다.") from exc
+        raise NotFound(f"{label.capitalize()} not found.") from exc
 
 
 def parse_uuid_list(values: Any, limit: int = 5000) -> list[str]:
     if not isinstance(values, list) or not values:
-        raise Invalid("대상을 한 개 이상 선택해 주세요.")
+        raise Invalid("Select at least one item.")
     if len(values) > limit:
-        raise Invalid(f"한 번에 {limit}개까지 처리할 수 있습니다. 나누어 다시 시도해 주세요.")
+        raise Invalid(f"You can process up to {limit} items at once. Split the selection and try again.")
     result = []
     for value in values:
         try:
             result.append(str(uuid.UUID(str(value))))
         except (ValueError, TypeError) as exc:
-            raise Invalid("선택한 항목 중 올바르지 않은 식별자가 있습니다. 새로고침 후 다시 시도해 주세요.") from exc
+            raise Invalid("Some selected items have invalid IDs. Refresh and try again.") from exc
     return list(dict.fromkeys(result))
 
 
@@ -72,15 +72,15 @@ def _text(payload: dict, key: str, limit: int, required: bool = False) -> str | 
     value = payload.get(key)
     if value is None:
         if required:
-            raise Invalid("필수 항목을 입력해 주세요.", "required")
+            raise Invalid("Please fill in the required field.", "required")
         return None
     if not isinstance(value, str):
-        raise Invalid("입력 형식이 올바르지 않습니다.")
+        raise Invalid("Invalid input.")
     value = value.strip()
     if required and not value:
-        raise Invalid("필수 항목을 입력해 주세요.", "required")
+        raise Invalid("Please fill in the required field.", "required")
     if len(value) > limit:
-        raise Invalid(f"{limit}자 이내로 입력해 주세요.", "too_long")
+        raise Invalid(f"Please use {limit} characters or fewer.", "too_long")
     return value or None
 
 
@@ -90,7 +90,7 @@ def _date(value: Any) -> date | None:
     try:
         return date.fromisoformat(str(value))
     except ValueError as exc:
-        raise Invalid("날짜 형식이 올바르지 않습니다. YYYY-MM-DD 형식으로 입력해 주세요.") from exc
+        raise Invalid("Invalid date. Use the YYYY-MM-DD format.") from exc
 
 
 def _iso(value) -> str | None:
@@ -234,10 +234,10 @@ def list_models(cursor, actor, sort: str | None = None, limit: int = 500) -> lis
 
 
 def get_model(cursor, actor, model_id: str) -> dict:
-    model_id = parse_uuid(model_id, "모델")
+    model_id = parse_uuid(model_id, "model")
     models = [m for m in list_models(cursor, actor, "name_asc", limit=100000) if m["id"] == model_id]
     if not models:
-        raise NotFound("요청한 모델이 없습니다.")
+        raise NotFound("Model not found.")
     model = models[0]
     cursor.execute("SELECT bio, cover_photo_id FROM models WHERE id = %s", (model_id,))
     extra = cursor.fetchone()
@@ -258,34 +258,34 @@ def create_model(cursor, actor, payload: dict) -> dict:
 
 
 def update_model(cursor, actor, model_id: str, payload: dict) -> dict:
-    model_id = parse_uuid(model_id, "모델")
+    model_id = parse_uuid(model_id, "model")
     sets, values = [], []
     for key, limit in MODEL_FIELDS.items():
         if key in payload:
             sets.append(f"{key} = %s")
             values.append(_text(payload, key, limit, required=(key == "name")))
     if "cover_photo_id" in payload:
-        cover = parse_uuid(payload["cover_photo_id"], "사진") if payload["cover_photo_id"] else None
+        cover = parse_uuid(payload["cover_photo_id"], "photo") if payload["cover_photo_id"] else None
         if cover:
             cursor.execute("SELECT 1 FROM photos WHERE id = %s AND model_id = %s AND deleted_at IS NULL", (cover, model_id))
             if not cursor.fetchone():
-                raise Invalid("이 모델의 사진만 대표 사진으로 지정할 수 있습니다.")
+                raise Invalid("Only this model's photos can be the cover.")
         sets.append("cover_photo_id = %s")
         values.append(cover)
     if not sets:
-        raise Invalid("변경할 내용이 없습니다.")
+        raise Invalid("Nothing to change.")
     cursor.execute(f"UPDATE models SET {', '.join(sets)}, updated_at = now() WHERE id = %s AND deleted_at IS NULL", (*values, model_id))
     if cursor.rowcount == 0:
-        raise NotFound("요청한 모델이 없습니다.")
+        raise NotFound("Model not found.")
     audit(cursor, actor, "model.update", "model", model_id)
     return {"id": model_id}
 
 
 def trash_model(cursor, actor, model_id: str) -> None:
-    model_id = parse_uuid(model_id, "모델")
+    model_id = parse_uuid(model_id, "model")
     cursor.execute("UPDATE models SET deleted_at = now(), trashed_with = NULL WHERE id = %s AND deleted_at IS NULL", (model_id,))
     if cursor.rowcount == 0:
-        raise NotFound("요청한 모델이 없습니다.")
+        raise NotFound("Model not found.")
     cursor.execute("UPDATE albums SET deleted_at = now(), trashed_with = %s WHERE model_id = %s AND deleted_at IS NULL", (model_id, model_id))
     cursor.execute("UPDATE photos SET deleted_at = now(), trashed_with = %s WHERE model_id = %s AND deleted_at IS NULL", (model_id, model_id))
     audit(cursor, actor, "model.trash", "model", model_id)
@@ -299,7 +299,7 @@ def list_albums(cursor, actor, sort: str | None = None, model_id: str | None = N
     where = ["a.deleted_at IS NULL", "m.deleted_at IS NULL", visible]
     if model_id:
         where.append("a.model_id = %(model_id)s")
-        params = {**params, "model_id": parse_uuid(model_id, "모델")}
+        params = {**params, "model_id": parse_uuid(model_id, "model")}
     clause = " AND ".join(where)
     cursor.execute(f"SELECT count(*) AS n FROM albums a JOIN models m ON m.id = a.model_id WHERE {clause}", params)
     total = cursor.fetchone()["n"]
@@ -317,7 +317,7 @@ def list_albums(cursor, actor, sort: str | None = None, model_id: str | None = N
 
 
 def get_album(cursor, actor, album_id: str) -> dict:
-    album_id = parse_uuid(album_id, "앨범")
+    album_id = parse_uuid(album_id, "album")
     visible, params = visible_album_sql(actor)
     cursor.execute(
         f"""
@@ -332,7 +332,7 @@ def get_album(cursor, actor, album_id: str) -> dict:
     )
     row = cursor.fetchone()
     if row is None:
-        raise NotFound("요청한 앨범이 없습니다.")
+        raise NotFound("Album not found.")
     album = _album_card(row)
     album["description"] = row["description"]
     cursor.execute(
@@ -351,10 +351,10 @@ def get_album(cursor, actor, album_id: str) -> dict:
 
 
 def create_album(cursor, actor, payload: dict) -> dict:
-    model_id = parse_uuid(payload.get("model_id"), "모델")
+    model_id = parse_uuid(payload.get("model_id"), "model")
     cursor.execute("SELECT 1 FROM models WHERE id = %s AND deleted_at IS NULL", (model_id,))
     if not cursor.fetchone():
-        raise Invalid("모델을 선택해 주세요.", "required")
+        raise Invalid("Please choose a model.", "required")
     cursor.execute(
         "INSERT INTO albums(model_id, title, description, shot_on, location) VALUES (%s, %s, %s, %s, %s) RETURNING id",
         (
@@ -371,7 +371,7 @@ def create_album(cursor, actor, payload: dict) -> dict:
 
 
 def update_album(cursor, actor, album_id: str, payload: dict) -> dict:
-    album_id = parse_uuid(album_id, "앨범")
+    album_id = parse_uuid(album_id, "album")
     sets, values = [], []
     for key, limit in ALBUM_FIELDS.items():
         if key in payload:
@@ -382,29 +382,29 @@ def update_album(cursor, actor, album_id: str, payload: dict) -> dict:
         values.append(_date(payload["shot_on"]))
     if "visibility" in payload:
         if payload["visibility"] not in {"private", "shared"}:
-            raise Invalid("공개 범위 값이 올바르지 않습니다.")
+            raise Invalid("Invalid visibility value.")
         sets.append("visibility = %s")
         values.append(payload["visibility"])
     if "model_id" in payload:
-        new_model = parse_uuid(payload["model_id"], "모델")
+        new_model = parse_uuid(payload["model_id"], "model")
         cursor.execute("SELECT 1 FROM models WHERE id = %s AND deleted_at IS NULL", (new_model,))
         if not cursor.fetchone():
-            raise Invalid("선택한 모델이 없습니다.")
+            raise Invalid("The selected model was not found.")
         sets.append("model_id = %s")
         values.append(new_model)
     if "cover_photo_id" in payload:
-        cover = parse_uuid(payload["cover_photo_id"], "사진") if payload["cover_photo_id"] else None
+        cover = parse_uuid(payload["cover_photo_id"], "photo") if payload["cover_photo_id"] else None
         if cover:
             cursor.execute("SELECT 1 FROM photos WHERE id = %s AND album_id = %s AND deleted_at IS NULL", (cover, album_id))
             if not cursor.fetchone():
-                raise Invalid("이 앨범의 사진만 커버로 지정할 수 있습니다.")
+                raise Invalid("Only this album's photos can be the cover.")
         sets.append("cover_photo_id = %s")
         values.append(cover)
     if not sets:
-        raise Invalid("변경할 내용이 없습니다.")
+        raise Invalid("Nothing to change.")
     cursor.execute(f"UPDATE albums SET {', '.join(sets)}, updated_at = now() WHERE id = %s AND deleted_at IS NULL", (*values, album_id))
     if cursor.rowcount == 0:
-        raise NotFound("요청한 앨범이 없습니다.")
+        raise NotFound("Album not found.")
     if "model_id" in payload:
         cursor.execute("UPDATE photos SET model_id = %s WHERE album_id = %s", (values[sets.index("model_id = %s")], album_id))
     audit(cursor, actor, "album.update", "album", album_id)
@@ -412,10 +412,10 @@ def update_album(cursor, actor, album_id: str, payload: dict) -> dict:
 
 
 def trash_album(cursor, actor, album_id: str) -> None:
-    album_id = parse_uuid(album_id, "앨범")
+    album_id = parse_uuid(album_id, "album")
     cursor.execute("UPDATE albums SET deleted_at = now(), trashed_with = NULL WHERE id = %s AND deleted_at IS NULL", (album_id,))
     if cursor.rowcount == 0:
-        raise NotFound("요청한 앨범이 없습니다.")
+        raise NotFound("Album not found.")
     cursor.execute("UPDATE photos SET deleted_at = now(), trashed_with = %s WHERE album_id = %s AND deleted_at IS NULL", (album_id, album_id))
     audit(cursor, actor, "album.trash", "album", album_id)
 
@@ -431,13 +431,13 @@ def album_photos(cursor, actor, album_id: str) -> list[dict]:
         WHERE p.album_id = %(album_id)s AND p.deleted_at IS NULL {"" if actor.is_owner else "AND p.status = 'ready'"}
         ORDER BY p.position, p.created_at
         """,
-        {"album_id": parse_uuid(album_id, "앨범"), "actor_id": actor.user_id},
+        {"album_id": parse_uuid(album_id, "album"), "actor_id": actor.user_id},
     )
     return [_photo_card(row) for row in cursor.fetchall()]
 
 
 def model_photos(cursor, actor, model_id: str, limit: int = 5000) -> list[dict]:
-    model_id = parse_uuid(model_id, "모델")
+    model_id = parse_uuid(model_id, "model")
     visible, params = visible_album_sql(actor)
     cursor.execute(
         f"""
@@ -452,7 +452,7 @@ def model_photos(cursor, actor, model_id: str, limit: int = 5000) -> list[dict]:
 
 
 def get_photo(cursor, actor, photo_id: str) -> dict:
-    photo_id = parse_uuid(photo_id, "사진")
+    photo_id = parse_uuid(photo_id, "photo")
     visible, params = visible_album_sql(actor)
     cursor.execute(
         f"""
@@ -467,7 +467,7 @@ def get_photo(cursor, actor, photo_id: str) -> dict:
     )
     row = cursor.fetchone()
     if row is None:
-        raise NotFound("요청한 사진이 없습니다.")
+        raise NotFound("Photo not found.")
     cursor.execute("SELECT t.name FROM photo_tags pt JOIN tags t ON t.id = pt.tag_id WHERE pt.photo_id = %s ORDER BY t.name", (photo_id,))
     tags = [r["name"] for r in cursor.fetchall()]
     return {
@@ -492,20 +492,20 @@ def get_photo(cursor, actor, photo_id: str) -> dict:
 
 def _normalize_tags(values: Any) -> list[str]:
     if not isinstance(values, list):
-        raise Invalid("태그 형식이 올바르지 않습니다.")
+        raise Invalid("Invalid tags.")
     tags = []
     for value in values:
         if not isinstance(value, str):
-            raise Invalid("태그 형식이 올바르지 않습니다.")
+            raise Invalid("Invalid tags.")
         tag = " ".join(value.split())
         if not tag:
             continue
         if len(tag) > TAG_MAX_LENGTH:
-            raise Invalid(f"태그는 {TAG_MAX_LENGTH}자 이내로 입력해 주세요.", "too_long")
+            raise Invalid(f"Tags must be {TAG_MAX_LENGTH} characters or fewer.", "too_long")
         tags.append(tag)
     tags = list(dict.fromkeys(tags))
     if len(tags) > TAGS_PER_PHOTO:
-        raise Invalid(f"태그는 사진당 {TAGS_PER_PHOTO}개까지 붙일 수 있습니다.")
+        raise Invalid(f"A photo can have up to {TAGS_PER_PHOTO} tags.")
     return tags
 
 
@@ -518,10 +518,10 @@ def _tag_ids(cursor, names: list[str]) -> list[str]:
 
 
 def update_photo(cursor, actor, photo_id: str, payload: dict) -> dict:
-    photo_id = parse_uuid(photo_id, "사진")
+    photo_id = parse_uuid(photo_id, "photo")
     cursor.execute("SELECT 1 FROM photos WHERE id = %s AND deleted_at IS NULL", (photo_id,))
     if not cursor.fetchone():
-        raise NotFound("요청한 사진이 없습니다.")
+        raise NotFound("Photo not found.")
     if "caption" in payload:
         cursor.execute("UPDATE photos SET caption = %s, updated_at = now() WHERE id = %s", (_text(payload, "caption", PHOTO_TEXT_FIELDS["caption"]), photo_id))
     if "is_pause" in payload:
@@ -556,15 +556,15 @@ def bulk(cursor, actor, action: str, ids: list[str], payload: dict) -> dict:
                 cursor.execute("DELETE FROM favorites WHERE user_id = %s AND photo_id = %s", (actor.user_id, photo_id))
         return {"updated": len(allowed)}
     if not actor.is_owner:
-        raise Invalid("이 작업은 소유자만 할 수 있습니다.", "forbidden")
+        raise Invalid("Only the owner can do this.", "forbidden")
     cursor.execute("SELECT id, album_id, model_id FROM photos WHERE id = ANY(%s::uuid[]) AND deleted_at IS NULL", (ids,))
     rows = cursor.fetchall()
     if len(rows) != len(ids):
-        raise NotFound("선택한 사진 중 일부가 없습니다. 새로고침 후 다시 시도해 주세요.")
+        raise NotFound("Some selected photos no longer exist. Refresh and try again.")
     if action in {"tag", "untag"}:
         names = _normalize_tags(payload.get("tags"))
         if not names:
-            raise Invalid("태그를 입력해 주세요.", "required")
+            raise Invalid("Please enter a tag.", "required")
         tag_ids = _tag_ids(cursor, names)
         for photo_id in ids:
             for tag_id in tag_ids:
@@ -573,11 +573,11 @@ def bulk(cursor, actor, action: str, ids: list[str], payload: dict) -> dict:
                 else:
                     cursor.execute("DELETE FROM photo_tags WHERE photo_id = %s AND tag_id = %s", (photo_id, tag_id))
     elif action == "move":
-        target = parse_uuid(payload.get("album_id"), "앨범")
+        target = parse_uuid(payload.get("album_id"), "album")
         cursor.execute("SELECT model_id FROM albums WHERE id = %s AND deleted_at IS NULL", (target,))
         album = cursor.fetchone()
         if album is None:
-            raise Invalid("옮길 앨범을 선택해 주세요.", "required")
+            raise Invalid("Choose an album to move to.", "required")
         position = _next_position(cursor, target)
         for photo_id in ids:
             cursor.execute("UPDATE photos SET album_id = %s, model_id = %s, position = %s, updated_at = now() WHERE id = %s", (target, album["model_id"], position, photo_id))
@@ -585,11 +585,11 @@ def bulk(cursor, actor, action: str, ids: list[str], payload: dict) -> dict:
         cursor.execute("UPDATE albums SET cover_photo_id = NULL WHERE cover_photo_id = ANY(%s::uuid[]) AND id <> %s", (ids, target))
     elif action == "set_album_cover":
         if len(ids) != 1:
-            raise Invalid("커버로 지정할 사진을 한 장만 선택해 주세요.")
+            raise Invalid("Select exactly one photo to use as the cover.")
         cursor.execute("UPDATE albums SET cover_photo_id = %s, updated_at = now() WHERE id = %s", (ids[0], rows[0]["album_id"]))
     elif action == "set_model_cover":
         if len(ids) != 1:
-            raise Invalid("대표 사진으로 지정할 사진을 한 장만 선택해 주세요.")
+            raise Invalid("Select exactly one photo to use as the model cover.")
         cursor.execute("UPDATE models SET cover_photo_id = %s, updated_at = now() WHERE id = %s", (ids[0], rows[0]["model_id"]))
     elif action in {"set_pause", "unset_pause"}:
         cursor.execute("UPDATE photos SET is_pause = %s, updated_at = now() WHERE id = ANY(%s::uuid[])", (action == "set_pause", ids))
@@ -598,11 +598,11 @@ def bulk(cursor, actor, action: str, ids: list[str], payload: dict) -> dict:
     elif action == "reorder":
         albums = {str(r["album_id"]) for r in rows}
         if len(albums) != 1:
-            raise Invalid("같은 앨범의 사진만 순서를 바꿀 수 있습니다.")
+            raise Invalid("Only photos in the same album can be reordered.")
         for index, photo_id in enumerate(ids, start=1):
             cursor.execute("UPDATE photos SET position = %s WHERE id = %s", (index * POSITION_STEP, photo_id))
     else:
-        raise Invalid("지원하지 않는 작업입니다.")
+        raise Invalid("Unsupported action.")
     audit(cursor, actor, f"photo.bulk.{action}", "photo", None, {"count": len(ids)})
     return {"updated": len(ids)}
 
@@ -610,7 +610,7 @@ def bulk(cursor, actor, action: str, ids: list[str], payload: dict) -> dict:
 def set_favorite(cursor, actor, photo_id: str, on: bool) -> dict:
     result = bulk(cursor, actor, "favorite" if on else "unfavorite", [photo_id], {})
     if result["updated"] == 0:
-        raise NotFound("요청한 사진이 없습니다.")
+        raise NotFound("Photo not found.")
     return {"id": parse_uuid(photo_id), "fav": on}
 
 
@@ -687,16 +687,16 @@ def find_duplicate(cursor, sha256: str) -> dict | None:
 
 
 def create_photo(cursor, actor, album_id: str, filename: str, upload: dict) -> dict:
-    album_id = parse_uuid(album_id, "앨범")
+    album_id = parse_uuid(album_id, "album")
     cursor.execute("SELECT model_id FROM albums WHERE id = %s AND deleted_at IS NULL FOR UPDATE", (album_id,))
     album = cursor.fetchone()
     if album is None:
-        raise Invalid("업로드할 앨범을 선택해 주세요.", "required")
+        raise Invalid("Choose an album to upload to.", "required")
     duplicate = find_duplicate(cursor, upload["sha256"])
     if duplicate:
-        where = "휴지통" if duplicate["in_trash"] else f"‘{duplicate['album_title']}’ 앨범"
-        raise Conflict(f"이미 같은 사진이 {where}에 있어 건너뛰었습니다.", "duplicate", duplicate)
-    safe_name = "".join(ch for ch in (filename or "사진")[:200] if ch.isprintable() and ch not in "\\/:*?\"<>|") or "사진"
+        where = "the trash" if duplicate["in_trash"] else f"the album “{duplicate['album_title']}”"
+        raise Conflict(f"Skipped: the same photo is already in {where}.", "duplicate", duplicate)
+    safe_name = "".join(ch for ch in (filename or "photo")[:200] if ch.isprintable() and ch not in "\\/:*?\"<>|") or "photo"
     cursor.execute(
         """
         INSERT INTO photos(album_id, model_id, original_filename, mime_type, byte_size, sha256, original_ext, position, status)
@@ -741,7 +741,7 @@ def mark_failed(cursor, photo_id: str, message: str) -> None:
 
 def media_access(cursor, actor, photo_id: str) -> dict:
     """사진 전달 전 권한 확인. 권한 밖이면 NotFound."""
-    photo_id = parse_uuid(photo_id, "사진")
+    photo_id = parse_uuid(photo_id, "photo")
     visible, params = visible_album_sql(actor)
     cursor.execute(
         f"""
@@ -755,9 +755,9 @@ def media_access(cursor, actor, photo_id: str) -> dict:
     )
     row = cursor.fetchone()
     if row is None:
-        raise NotFound("요청한 사진이 없습니다.")
+        raise NotFound("Photo not found.")
     if (row["deleted_at"] or row["album_deleted"]) and not actor.is_owner:
-        raise NotFound("요청한 사진이 없습니다.")
+        raise NotFound("Photo not found.")
     return row
 
 
@@ -818,7 +818,7 @@ def restore(cursor, actor, kind: str, ids: list[str]) -> dict:
             if row is None:
                 continue
             if row["deleted_at"] is not None:
-                raise Conflict("모델이 휴지통에 있어 앨범만 복원할 수 없습니다. 모델을 먼저 복원해 주세요.", "parent_in_trash")
+                raise Conflict("The model is in the trash. Restore the model first.", "parent_in_trash")
             cursor.execute("UPDATE albums SET deleted_at = NULL, trashed_with = NULL WHERE id = %s", (target,))
             cursor.execute("UPDATE photos SET deleted_at = NULL, trashed_with = NULL WHERE trashed_with = %s", (target,))
         elif kind == "photo":
@@ -827,10 +827,10 @@ def restore(cursor, actor, kind: str, ids: list[str]) -> dict:
             if row is None:
                 continue
             if row["deleted_at"] is not None:
-                raise Conflict("앨범이 휴지통에 있어 사진만 복원할 수 없습니다. 앨범을 먼저 복원해 주세요.", "parent_in_trash")
+                raise Conflict("The album is in the trash. Restore the album first.", "parent_in_trash")
             cursor.execute("UPDATE photos SET deleted_at = NULL, trashed_with = NULL WHERE id = %s", (target,))
         else:
-            raise Invalid("복원할 항목 종류가 올바르지 않습니다.")
+            raise Invalid("Invalid item type to restore.")
         restored += 1
     audit(cursor, actor, "trash.restore", kind, None, {"count": restored})
     return {"restored": restored}
@@ -859,7 +859,7 @@ def purge(cursor, actor, kind: str | None, ids: list[str] | None, older_than_day
         targets = parse_uuid_list(ids or [])
         {"model": model_ids, "album": album_ids, "photo": photo_ids}.get(kind, []).extend(targets)
         if kind not in {"model", "album", "photo"}:
-            raise Invalid("삭제할 항목 종류가 올바르지 않습니다.")
+            raise Invalid("Invalid item type to delete.")
     cursor.execute(
         """
         SELECT id, created_at, original_ext FROM photos
@@ -895,14 +895,14 @@ def update_settings(cursor, actor, payload: dict) -> dict:
 
     for key, value in payload.items():
         if key not in SETTING_RULES:
-            raise Invalid("바꿀 수 없는 설정입니다.")
+            raise Invalid("This setting can't be changed.")
         kind, low, high = SETTING_RULES[key]
         if kind is bool:
             if not isinstance(value, bool):
-                raise Invalid("설정 값 형식이 올바르지 않습니다.")
+                raise Invalid("Invalid setting value.")
         else:
             if not isinstance(value, int) or isinstance(value, bool) or not (low <= value <= high):
-                raise Invalid(f"{low}에서 {high} 사이의 숫자를 입력해 주세요.")
+                raise Invalid(f"Enter a number between {low} and {high}.")
         cursor.execute(
             "INSERT INTO app_settings(key, value) VALUES (%s, %s) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value",
             (key, Jsonb(value)),
