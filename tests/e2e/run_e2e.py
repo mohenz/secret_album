@@ -176,12 +176,34 @@ def run() -> int:
         page.set_input_files("#files", [str(files[0])])
         page.wait_for_selector("text=Skipped: the same photo")
         check("중복 사진 건너뜀 안내", True)
+        # 4-1. 클립보드 이미지 붙여넣기 (Ctrl+V와 같은 paste 이벤트)
+        paste_png = """(color) => {
+          const canvas = document.createElement('canvas');
+          canvas.width = 640; canvas.height = 400;
+          const ctx = canvas.getContext('2d');
+          ctx.fillStyle = color; ctx.fillRect(0, 0, 640, 400);
+          return new Promise((resolve) => canvas.toBlob((blob) => {
+            const data = new DataTransfer();
+            data.items.add(new File([blob], 'image.png', { type: 'image/png' }));
+            document.body.dispatchEvent(new ClipboardEvent('paste', { clipboardData: data, bubbles: true, cancelable: true }));
+            resolve(true);
+          }, 'image/png'));
+        }"""
+        page.evaluate(paste_png, "#2a9d8f")
+        page.wait_for_function("[...document.querySelectorAll('.upload-item')].some(i => /pasted-.*\.png/.test(i.textContent) && i.querySelector('.badge-success'))", timeout=30000)
+        check("클립보드 이미지 붙여넣기 업로드", True)
+        page.evaluate("""() => { const data = new DataTransfer(); data.setData('text/plain', 'hello');
+          document.body.dispatchEvent(new ClipboardEvent('paste', { clipboardData: data, bubbles: true, cancelable: true })); }""")
+        page.wait_for_selector("text=The clipboard has no image")
+        check("이미지 없는 붙여넣기 안내", True)
+        finished_toasts = page.locator(".toast", has_text="Upload finished").count()
+        check("업로드 완료 안내는 묶음마다 한 번", finished_toasts == 2, f"{finished_toasts}개")
         page.screenshot(path=OUT / "02-upload.png", full_page=True)
 
         # 5. 앨범 감상
         page.goto(album_url)
         page.wait_for_selector(".flow-item img.loaded")
-        check("앨범 사진 흐름 6장", page.locator(".flow-item").count() == 6)
+        check("앨범 사진 흐름 7장(붙여넣기 포함)", page.locator(".flow-item").count() == 7)
         check("앨범 표지 제목", page.locator("#album-title").inner_text() == "Autumn Seongsu Studio")
         img_src = page.locator(".flow-item img").first.get_attribute("src")
         check("사진은 API /media 경로로만 제공", f":{API_PORT}/media/" in img_src)
@@ -194,7 +216,7 @@ def run() -> int:
         page.wait_for_timeout(600)  # 열림 전환이 끝난 뒤 키 입력
         check("뷰어 열림 + URL photo 반영", "photo=" in page.url)
         page.keyboard.press("ArrowRight")
-        expect(page.locator(".pswp__counter")).to_have_text("2 / 6")
+        expect(page.locator(".pswp__counter")).to_have_text("2 / 7")
         check("방향키로 다음 사진", True)
         page.keyboard.press("f")
         page.wait_for_selector("text=Added to favorites.")
@@ -208,6 +230,13 @@ def run() -> int:
         page.wait_for_selector(".pswp", state="detached")
         check("Esc로 뷰어 닫힘 + URL photo 제거", "photo=" not in page.url)
 
+        # 6-1. 앨범 화면에서 바로 붙여넣기 → 이 앨범에 업로드
+        page.evaluate(paste_png, "#e76f51")
+        page.wait_for_selector("dialog .upload-item .badge-success", timeout=30000)
+        page.click("dialog button:has-text('Close')")
+        page.wait_for_function("document.querySelectorAll('.flow-item').length === 8", timeout=15000)
+        check("앨범 화면 붙여넣기 → 앨범에 추가", True)
+
         # 7. 편집 모드: 2장 선택 → 휴지통
         page.click("button[aria-label='Album menu']")
         page.click(".menu-item:has-text('Edit')")
@@ -217,7 +246,7 @@ def run() -> int:
         expect(page.locator(".bulk-bar .count")).to_have_text("2 selected")
         page.click(".bulk-bar button:has-text('Move to trash')")
         page.wait_for_selector("text=Moved 2 photos to trash.")
-        page.wait_for_function("document.querySelectorAll('.flow-item').length === 4")
+        page.wait_for_function("document.querySelectorAll('.flow-item').length === 6")
         check("편집 모드 일괄 휴지통 이동", True)
         page.click("#edit-done")
 

@@ -3,7 +3,7 @@ import { api } from '../shared/api.js';
 import { albumForm } from '../shared/forms.js';
 import { albumCard, photoFrame, PhotoFlow } from '../shared/gallery.js';
 import { boot, isOwner } from '../shared/layout.js';
-import { enablePageDrop, Uploader } from '../shared/uploader.js';
+import { enablePageDrop, enablePagePaste, Uploader } from '../shared/uploader.js';
 import {
   button, confirmDialog, el, errorState, emptyState, formatDate, formatNumber, icon, iconButton, joinMeta, loadingState, openMenu, plural, setChildren, showDialog, toast, toastError,
 } from '../shared/ui.js';
@@ -222,7 +222,7 @@ function render() {
     el('div', { class: 'album-toolbar', id: 'album-toolbar' },
       el('div', { class: 'group' }),
       el('div', { class: 'group' }, photos.length ? button('Slideshow', { variant: 'btn-outline', iconName: 'play', onclick: slideshowDialog }) : null, moreButton)),
-    photos.length ? flowNode : emptyState('image', 'No photos in this album yet', owner ? 'Drop photos onto this page or use the upload page.' : null,
+    photos.length ? flowNode : emptyState('image', 'No photos in this album yet', owner ? 'Drop photos onto this page, paste with Ctrl+V, or use the upload page.' : null,
       owner ? el('a', { class: 'btn btn-primary', href: `/manage/upload.html?album=${albumId}` }, icon('upload'), 'Upload photos') : null),
     album.next_album ? el('section', { class: 'next-album', 'aria-label': 'Next album' }, el('p', { class: 'label' }, 'More from this model'), albumCard(album.next_album, { sizes: '100vw' })) : null,
     el('footer', { class: 'page-foot' }, '← → browse · Space slideshow · F favorite · I details · Shift+H hide screen'));
@@ -252,6 +252,7 @@ try {
   if (isOwner()) {
     addEventListener('keydown', (event) => { if (event.key === 'Escape' && flow.editing && !document.querySelector('dialog[open], .pswp')) setEditing(false); });
     enablePageDrop(uploadHere);
+    enablePagePaste(uploadHere);
   }
   const photoParam = params.get('photo');
   if (photoParam) {

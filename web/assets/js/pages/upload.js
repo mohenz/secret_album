@@ -2,7 +2,7 @@
 import { api } from '../shared/api.js';
 import { albumForm } from '../shared/forms.js';
 import { boot } from '../shared/layout.js';
-import { enablePageDrop, Uploader } from '../shared/uploader.js';
+import { canReadClipboard, enablePageDrop, enablePagePaste, readClipboardImages, Uploader } from '../shared/uploader.js';
 import { button, el, errorState, icon, joinMeta, loadingState, plural, toast } from '../shared/ui.js';
 
 const main = document.getElementById('main');
@@ -25,9 +25,11 @@ async function loadAlbums(selectId) {
 const fileInput = el('input', { type: 'file', id: 'files', multiple: true, accept: 'image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif', class: 'visually-hidden' });
 const dropzone = el('div', { class: 'dropzone' },
   icon('upload', 'icon-32'),
-  el('p', { class: 'text-card' }, 'Drag photos here'),
-  el('p', { class: 'text-ui' }, 'JPEG, PNG, WebP, or HEIC, up to 200 MB each'),
-  el('label', { class: 'btn btn-primary', for: 'files' }, icon('images'), 'Choose files'),
+  el('p', { class: 'text-card' }, 'Drag photos here or paste with Ctrl+V'),
+  el('p', { class: 'text-ui' }, 'JPEG, PNG, WebP, or HEIC, up to 200 MB each. Copied images and screenshots are uploaded as PNG.'),
+  el('div', { class: 'row-actions' },
+    el('label', { class: 'btn btn-primary', for: 'files' }, icon('images'), 'Choose files'),
+    canReadClipboard() ? button('Paste from clipboard', { variant: 'btn-outline', iconName: 'copy', onclick: pasteFromButton }) : null),
   fileInput);
 const list = el('div', { class: 'upload-list', role: 'list', 'aria-label': 'Upload queue' });
 const summary = el('div', { class: 'upload-summary', role: 'status' });
@@ -35,11 +37,12 @@ const doneLink = el('a', { class: 'btn btn-outline', hidden: true }, 'View album
 
 const uploader = new Uploader({
   list, summary, getAlbumId: () => albumSelect.value,
-  onFinished: (entries) => {
+  onFinished: (entries) => {  // 이번에 끝난 항목들
     doneLink.hidden = false;
     doneLink.href = `/pages/album.html?id=${albumSelect.value}`;
     const ok = entries.filter((e) => e.state === 'done').length;
-    toast(`Upload finished. ${plural(ok, 'photo')} added.`, { type: 'success' });
+    if (ok) toast(`Upload finished. ${plural(ok, 'photo')} added.`, { type: 'success' });
+    else toast('No new photos were added. Check the list for details.', { type: 'info' });
   },
 });
 
@@ -61,6 +64,17 @@ dropzone.addEventListener('dragover', (event) => { event.preventDefault(); dropz
 dropzone.addEventListener('dragleave', () => { dropzone.dataset.over = 'false'; });
 dropzone.addEventListener('drop', () => { dropzone.dataset.over = 'false'; });
 enablePageDrop(addFiles);
+enablePagePaste(addFiles, () => toast('The clipboard has no image. Copy an image or take a screenshot, then paste again.', { type: 'error' }));
+
+async function pasteFromButton() {
+  try {
+    const files = await readClipboardImages();
+    if (files.length) addFiles(files);
+    else toast('The clipboard has no image. Copy an image or take a screenshot, then try again.', { type: 'error' });
+  } catch {
+    toast('Could not read the clipboard. Allow clipboard access in the browser, or press Ctrl+V instead.', { type: 'error' });
+  }
+}
 
 try {
   await loadAlbums(preset);

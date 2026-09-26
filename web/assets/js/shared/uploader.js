@@ -22,6 +22,7 @@ export class Uploader {
     this.onFinished = onFinished;
     this.entries = [];
     this.active = 0;
+    this.reported = 0;  // 이미 완료를 알린 항목 수. 새 항목이 모두 끝났을 때만 한 번 알린다.
     this.pollTimer = null;
     this.beforeUnload = (event) => { if (this.busy()) { event.preventDefault(); event.returnValue = ''; } };
     addEventListener('beforeunload', this.beforeUnload);
@@ -82,7 +83,11 @@ export class Uploader {
     this.summary.replaceChildren(
       el('span', { 'data-numeric': true }, `${formatNumber(finished)} of ${formatNumber(total)} finished`),
       el('span', { class: 'text-meta' }, `Uploaded ${formatNumber(count('done'))} · Skipped ${formatNumber(count('skipped'))} · Failed ${formatNumber(count('failed'))}`));
-    if (total && finished === total) this.onFinished?.(this.entries);
+    if (total && finished === total && total > this.reported) {
+      const batch = this.entries.slice(this.reported);
+      this.reported = total;
+      this.onFinished?.(batch, this.entries);
+    }
   }
 
   pump() {
@@ -152,6 +157,56 @@ export class Uploader {
     removeEventListener('beforeunload', this.beforeUnload);
     clearTimeout(this.pollTimer);
   }
+}
+
+// ------------------------------------------------ 클립보드 이미지
+// 복사한 이미지는 대개 "image.png"라는 같은 이름으로 들어오므로, 시각과 순번으로 이름을 새로 붙인다.
+function pastedName(type, index) {
+  const ext = { 'image/png': 'png', 'image/jpeg': 'jpg', 'image/webp': 'webp', 'image/heic': 'heic', 'image/heif': 'heif' }[type] || 'png';
+  const now = new Date();
+  const pad = (n) => String(n).padStart(2, '0');
+  const stamp = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}-${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
+  return `pasted-${stamp}${index ? `-${index + 1}` : ''}.${ext}`;
+}
+
+function renamePasted(blobs) {
+  return blobs.map((blob, index) => new File([blob], pastedName(blob.type, index), { type: blob.type, lastModified: Date.now() }));
+}
+
+export function imagesFromClipboard(clipboardData) {
+  if (!clipboardData) return [];
+  const blobs = [...(clipboardData.items || [])]
+    .filter((item) => item.kind === 'file' && item.type.startsWith('image/'))
+    .map((item) => item.getAsFile())
+    .filter(Boolean);
+  return renamePasted(blobs);
+}
+
+// 버튼으로 붙여넣기: 보안 컨텍스트(https 또는 localhost)에서만 된다. 그 밖에서는 Ctrl+V만 쓴다.
+export const canReadClipboard = () => Boolean(window.isSecureContext && navigator.clipboard?.read);
+
+export async function readClipboardImages() {
+  const items = await navigator.clipboard.read();
+  const blobs = [];
+  for (const item of items) {
+    const type = item.types.find((t) => t.startsWith('image/'));
+    if (type) blobs.push(await item.getType(type));
+  }
+  return renamePasted(blobs);
+}
+
+// 입력칸에 글자를 붙여넣을 때는 가로채지 않는다.
+export function enablePagePaste(onFiles, onNoImage) {
+  addEventListener('paste', (event) => {
+    if (event.target.closest?.('input, textarea, [contenteditable]')) return;
+    const files = imagesFromClipboard(event.clipboardData);
+    if (files.length) {
+      event.preventDefault();
+      onFiles(files);
+    } else {
+      onNoImage?.();
+    }
+  });
 }
 
 // 화면 어디에 끌어 놓아도 전체 화면 드롭 영역을 보여 준다.
