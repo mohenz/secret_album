@@ -4,7 +4,7 @@
 
 | 항목 | 내용 |
 |---|---|
-| 프로젝트 | 비밀앨범 (`D:\workspace\secrete_album`) |
+| 프로젝트 | 비밀앨범 (`D:\workspace\secret_album`) |
 | 버전 | 0.2 초안 (2026년 9월 26일) |
 | 개정 사유 | 사용자 지시: 아키텍처를 **cinetube 프로젝트와 동일하게** 구성 (v0.1의 Next.js·Caddy 구성 폐기) |
 | 기준 문서 | `docs/design_request.md` v0.2 (갤러리형 디자인 요청서) |
@@ -66,8 +66,8 @@
 | 파일 저장소 | `local/media/`, Pillow로 300px WebP 썸네일 | 같음. 파생 이미지 3종(thumb·medium·large) |
 | 백그라운드 작업 | `scripts/local_worker.py` + `background_jobs` 테이블(`FOR UPDATE SKIP LOCKED`) | 같음. 업로드 사진 처리를 기본 비동기로 사용 |
 | 실행 | `start-cinetube.cmd` / `stop-cinetube.cmd` / `ct.cmd` | `start-album.cmd` / `stop-album.cmd` / `sa.cmd` |
-| 운영 서버 | 내부망 Windows 서버 `192.168.0.2`, `E:\workspace\cinetube` | 같은 서버, `E:\workspace\secrete_album` (결정 D1) |
-| 배포 | Gitea `main` push → post-receive 훅 → 작업 트리 갱신 + API 재시작 | 같음. Gitea 저장소 `admin/secrete_album` |
+| 운영 서버 | 내부망 Windows 서버 `192.168.0.2`, `E:\workspace\cinetube` | 같은 서버, `E:\workspace\secret_album` (결정 D1) |
+| 배포 | Gitea `main` push → post-receive 훅 → 작업 트리 갱신 + API 재시작 | 같음. Gitea 저장소 `admin/secret_album` |
 | 프로세스 유지 | `CineTube-API-Supervisor` 예약 작업 | 같음. API와 **Worker 모두** 감시(12.3) |
 
 Docker·Node 빌드 도구는 쓰지 않는다. 서버에는 PostgreSQL과 Python만 설치한다.
@@ -103,7 +103,7 @@ pillow-heif        # D5에서 HEIC 지원을 결정한 경우만
 ## 4. 프로젝트 구조
 
 ```text
-secrete_album/
+secret_album/
 ├─ start-album.cmd / stop-album.cmd / sa.cmd   원클릭 실행·중지·짧은 실행
 ├─ requirements.txt
 ├─ README.md
@@ -372,10 +372,10 @@ API 계약 상세는 구현 단계에서 `docs/local_api_contract.md`로 분리�
 
 | 항목 | 개발 PC | 운영 서버 |
 |---|---|---|
-| 경로 | `D:\workspace\secrete_album` | `E:\workspace\secrete_album` (D1) |
+| 경로 | `D:\workspace\secret_album` | `E:\workspace\secret_album` (D1) |
 | 정적 웹 | `http://localhost:8090` | `http://192.168.0.2:8090` |
 | API | `http://localhost:3051` | `http://192.168.0.2:3051` |
-| PostgreSQL | `127.0.0.1:54328`, DB `secrete_album` | 같음(서버 내부만) |
+| PostgreSQL | `127.0.0.1:54328`, DB `secret_album` | 같음(서버 내부만) |
 | 저장소 | `local/media` | `local/media` (사진 디스크가 따로 있으면 `ALBUM_MEDIA_ROOT`로 변경) |
 
 포트 8090·3051·54328은 워크스페이스 `development_systems.csv`에서 사용 중이지 않음을 확인했다(2026-09-26). 운영 서버에서 다른 서비스와 겹치지 않는지 배포 전에 다시 확인한다.
@@ -383,7 +383,7 @@ API 계약 상세는 구현 단계에서 `docs/local_api_contract.md`로 분리�
 환경 변수(`scripts/album_api/config.py`, cinetube `config.py`와 같은 방식):
 
 ```text
-PGHOST=127.0.0.1  PGPORT=54328  PGUSER=album_app  PGPASSWORD=***  PGDATABASE=secrete_album
+PGHOST=127.0.0.1  PGPORT=54328  PGUSER=album_app  PGPASSWORD=***  PGDATABASE=secret_album
 ALBUM_API_HOST=0.0.0.0          ALBUM_API_PORT=3051
 ALBUM_WEB_ORIGINS=http://192.168.0.2:8090,http://localhost:8090
 ALBUM_MEDIA_ROOT=<비우면 local/media>
@@ -398,7 +398,7 @@ ALBUM_SLOW_REQUEST_MS=1000
 ## 11. 개발 실행과 검증
 
 ```powershell
-cd D:\workspace\secrete_album
+cd D:\workspace\secret_album
 python -m pip install --user -r requirements.txt   # 최초 1회
 .\sa                                                 # DB → API → Worker → 웹 기동, 브라우저 열기
 python scripts\admin_create.py                      # 최초 1회 소유자 계정 생성
@@ -432,7 +432,7 @@ python -m unittest discover -s tests -t .
 
 | 항목 | 값 |
 |---|---|
-| 저장소 | `http://192.168.0.2:3000/admin/secrete_album.git` (신규 생성) |
+| 저장소 | `http://192.168.0.2:3000/admin/secret_album.git` (신규 생성) |
 | 원격 | `gitea`만 등록. 비공개 사진 앨범이므로 GitHub 원격은 두지 않음(결정 D8) |
 | 배포 브랜치 | `main` |
 
@@ -470,7 +470,7 @@ Git push 성공과 서버 배포 성공은 따로 확인한다(cinetube 문서�
 
 ### 12.3 프로세스 유지·모니터링
 
-- `register_api_supervisor.ps1`로 `SecreteAlbum-Supervisor` 예약 작업 등록(부팅 시 + 1분마다 자기 복구). cinetube 감시 스크립트와 같은 이유(배포 훅·에이전트 셸에서 띄운 프로세스가 호출자 종료 시 함께 종료되는 문제)로, 배포 훅은 프로세스를 죽이기만 하고 재기동은 감시 작업이 맡는다.
+- `register_api_supervisor.ps1`로 `SecretAlbum-Supervisor` 예약 작업 등록(부팅 시 + 1분마다 자기 복구). cinetube 감시 스크립트와 같은 이유(배포 훅·에이전트 셸에서 띄운 프로세스가 호출자 종료 시 함께 종료되는 문제)로, 배포 훅은 프로세스를 죽이기만 하고 재기동은 감시 작업이 맡는다.
 - cinetube는 API만 감시하지만, 비밀앨범은 업로드 처리가 Worker에 의존하므로 **API와 Worker를 모두 감시**한다. 정적 웹서버와 PostgreSQL도 같은 작업에서 살아 있는지 확인한다.
 - 로그: `local/api.*.log`, `worker.*.log`, `web.*.log`, `postgres.log`, `supervisor.log`, `deploy.log`. 일 단위 순환, 14일 보관.
 - 감사 로그(`audit_logs`): 로그인 성공·실패, 2단계 인증 변경, 영구 삭제, 원본 다운로드, 설정 변경.
@@ -523,13 +523,13 @@ Git push 성공과 서버 배포 성공은 따로 확인한다(cinetube 문서�
 
 | 번호 | 항목 | 제안 |
 |---|---|---|
-| D1 | 운영 서버 | cinetube와 같은 `192.168.0.2`, 경로 `E:\workspace\secrete_album`. 사진 디스크 용량(원본 600GB 가정) 확인 필요 |
+| D1 | 운영 서버 | cinetube와 같은 `192.168.0.2`, 경로 `E:\workspace\secret_album`. 사진 디스크 용량(원본 600GB 가정) 확인 필요 |
 | D2 | **Bloom 표준의 Radix UI 기반 예외** | Bloom은 Radix(React) 기반을 요구하지만 cinetube 구성은 Vanilla JS라 Radix를 쓸 수 없다. 네이티브 `<dialog>`·`popover`와 공통 `ui.js`로 대체하고, 포커스 가두기·복귀·`Esc` 닫기·`aria-*`를 직접 보장하는 예외로 기록할 것을 제안. 토큰·글꼴·아이콘·간격·문구·접근성 규칙은 그대로 준수 |
 | D3 | HTTPS | 1차는 cinetube와 같이 HTTP. 내부망이라도 무선 구간에서 비밀번호·사진이 평문으로 오가므로, 6단계에서 HTTPS(내부 인증서) 적용을 권장 |
 | D4 | 2단계 인증 필수 여부 | 소유자 필수 권장 |
 | D5 | HEIC(아이폰 사진) 지원 | `pillow-heif` 추가로 가능. 지원 권장 |
 | D6 | 열람자 기능 | 데이터 모델만 반영, 화면은 2차 |
 | D7 | 디스크 암호화 | 서버 사진 디스크·백업 디스크 BitLocker 권장 |
-| D8 | 원격 저장소 | Gitea만 사용, GitHub 원격 없음 권장 |
+| D8 | 원격 저장소 | Gitea만 사용, GitHub 원격 없음 권장. 2026-09-26 현재 사용자 지시로 GitHub 공개 저장소 `mohenz/secret_album`(`origin`)에 배포되어 있어 유지 여부 결정 필요 |
 | D9 | 휴지통 보관 기간 | 30일 |
 | D10 | 디자인 요청서 표준 예외 E1~E6 | 디자인 요청서 13장과 함께 결정 |

@@ -9,23 +9,23 @@
 | 항목 | 값 |
 |---|---|
 | 프로젝트명 | 비밀앨범 |
-| project_key | `secrete_album` (폴더명 철자 그대로) |
+| project_key | `secret_album` (2026-09-26 폴더명 `secrete_album`→`secret_album` 변경에 맞춤) |
 | 목적 | 모델 사진을 보관·관리하고 감상하는 **갤러리형 비공개 앨범 웹사이트** |
 | 운영 형태 | 내부망 Windows 서버 전용, 인터넷 공개 없음 |
-| 개발 경로 | `D:\workspace\secrete_album` |
-| 운영 경로(제안) | 서버 `192.168.0.2`의 `E:\workspace\secrete_album` |
-| git | 아직 저장소 없음. 워크스페이스 저장소에서도 추적하지 않음 |
+| 개발 경로 | `D:\workspace\secret_album` |
+| 운영 경로(제안) | 서버 `192.168.0.2`의 `E:\workspace\secret_album` |
+| git | 프로젝트 폴더 독립 저장소, 브랜치 `main`. 원격 `origin` = `https://github.com/mohenz/secret_album.git` (**공개 저장소**). 워크스페이스 저장소에서는 추적하지 않음 |
 
 ## 2. project_control 등록
 
 | 항목 | 값 |
 |---|---|
 | 레지스트리 | `project_control/project_registry.md` 38행 |
-| 별칭 | `secrete_album`, `secrete album`, `secret_album`, `secret album`, `비밀앨범`, `비밀 앨범` |
-| 상태 파일 | `project_control/states/secrete_album_current.md` |
+| 별칭 | `secret_album`, `secret album`, `secret-album`, `비밀앨범`, `비밀 앨범`, `secrete_album`·`secrete album`(이전 이름) |
+| 상태 파일 | `project_control/states/secret_album_current.md` |
 | 커밋 | project_control 저장소에 커밋하지 않음 |
 
-> 레지스트리 항목과 상태 파일은 등록 당시(디자인 요청서 v0.1) 내용이다. 이후 결정된 **갤러리형 방향(v0.2)과 cinetube 동일 아키텍처는 아직 반영되지 않았다.**
+> 2026-09-26 폴더명 변경에 맞춰 레지스트리 항목과 상태 파일(`secrete_album_current.md` → `secret_album_current.md`)을 현재 설정(갤러리형 v0.2, cinetube 동일 아키텍처)으로 갱신했다.
 
 ## 3. 문서
 
@@ -70,7 +70,7 @@
 | 화면 | Vanilla HTML·CSS·JS, 빌드 없음, 화면별 HTML + 화면별 진입 JS. 정적 웹서버 `python -m http.server 8090 --directory web` |
 | API | Python 표준 `ThreadingHTTPServer`, 진입점 `scripts/local_api.py`, 계층 패키지 `scripts/album_api/` |
 | Worker | `scripts/local_worker.py` + `background_jobs` 테이블(`FOR UPDATE SKIP LOCKED`) |
-| DB | PostgreSQL 전용 데이터 디렉터리 `local/postgres-data`, DB `secrete_album`, 앱 역할 `album_app` |
+| DB | PostgreSQL 전용 데이터 디렉터리 `local/postgres-data`, DB `secret_album`, 앱 역할 `album_app` |
 | 사진 저장소 | `local/media/originals`(원본) + `local/media/derived`(thumb 480·medium 1600·large 3200 WebP) |
 | 사진 뷰어 | PhotoSwipe 5 (로컬 복사본) |
 | 사진 격자 | 저스티파이드 레이아웃 직접 구현 |
@@ -97,7 +97,7 @@
 비밀값은 `local/album.env`(git 제외)에만 둔다.
 
 ```text
-PGHOST=127.0.0.1  PGPORT=54328  PGUSER=album_app  PGPASSWORD=***  PGDATABASE=secrete_album
+PGHOST=127.0.0.1  PGPORT=54328  PGUSER=album_app  PGPASSWORD=***  PGDATABASE=secret_album
 ALBUM_API_HOST=0.0.0.0          ALBUM_API_PORT=3051
 ALBUM_WEB_ORIGINS=http://192.168.0.2:8090,http://localhost:8090
 ALBUM_MEDIA_ROOT=<비우면 local/media>
@@ -126,9 +126,9 @@ git push gitea main
 
 | 항목 | 값 |
 |---|---|
-| Gitea 저장소(제안) | `http://192.168.0.2:3000/admin/secrete_album.git` (미생성) |
+| Gitea 저장소(제안) | `http://192.168.0.2:3000/admin/secret_album.git` (미생성) |
 | 배포 로그 | 서버 `local/deploy.log` |
-| 프로세스 유지 | `SecreteAlbum-Supervisor` 예약 작업 (미등록) |
+| 프로세스 유지 | `SecretAlbum-Supervisor` 예약 작업 (미등록) |
 | 백업 | DB 매일 03:00 `pg_dump` 30일 보관, 원본 사진 매일 03:30 `robocopy /MIR` |
 
 ## 9. 결정 대기 항목
@@ -143,7 +143,7 @@ git push gitea main
 | D5 | HEIC 지원 | 지원 (`pillow-heif`) |
 | D6 | 열람자 기능 | 데이터 모델만, 화면은 2차 |
 | D7 | 디스크 암호화 | BitLocker |
-| D8 | 원격 저장소 | Gitea만 |
+| D8 | 원격 저장소 | 설계 제안은 Gitea만이었으나, 사용자 지시로 GitHub 공개 저장소에 배포함(2026-09-26). 공개 유지 여부 결정 필요 |
 | D9 | 휴지통 보관 기간 | 30일 |
 | — | 동영상 지원 | 1차 제외 |
 
@@ -157,11 +157,12 @@ git push gitea main
 | 2026-09-26 | 시스템 설계서 v0.1 작성 (Next.js 기반) |
 | 2026-09-26 | 사용자 지시로 시스템 설계서 v0.2 작성 — cinetube와 동일한 아키텍처 |
 | 2026-09-26 | 이 설정 문서 작성 |
+| 2026-09-26 | 폴더명 `secret_album`으로 변경(사용자), GitHub `mohenz/secret_album` 최초 배포(커밋 `949b84e`), 문서·레지스트리·상태 파일 경로 갱신 |
 
 ## 11. 다음 작업
 
 1. 9장 결정 대기 항목 확정
 2. `design/` 외부 시안 8화면을 디자인 요청서 v0.2·Bloom 표준 기준으로 검토
-3. `project_control` 레지스트리·상태 파일을 현재 설정으로 갱신, 포트를 `development_systems.csv`에 등록
-4. git 저장소 초기화(`.gitignore`에 `local/` 포함), Gitea 저장소 생성
+3. 포트를 `development_systems.csv`에 등록
+4. `.gitignore` 작성(`local/` 포함), Gitea 저장소 생성, GitHub 저장소 공개 여부 결정
 5. 시스템 설계서 14장 0단계(기반) 구현 착수
