@@ -2,7 +2,7 @@
 import { api } from '../shared/api.js';
 import { photoFrame } from '../shared/gallery.js';
 import { boot } from '../shared/layout.js';
-import { button, confirmDialog, el, emptyState, errorState, formatDate, formatNumber, icon, loadingState, plural, toast, toastError } from '../shared/ui.js';
+import { button, confirmDialog, el, emptyState, errorState, formatDate, formatNumber, icon, loadingState, plural, toast, toastError, setChildren } from '../shared/ui.js';
 
 const main = document.getElementById('main');
 await boot({ ownerOnly: true });
@@ -88,7 +88,7 @@ function render() {
         button('Restore', { variant: 'btn-ghost', iconName: 'rotate-ccw', onclick: () => restore([item]) }),
         button('Delete', { variant: 'btn-ghost', iconName: 'trash-2', onclick: () => purge([item]) })));
   });
-  main.replaceChildren(
+  setChildren(main,
     el('div', { class: 'page-head' }, el('h1', {}, 'Trash')),
     data.items.length ? bar : null,
     data.items.length ? el('div', { class: 'trash-list', role: 'list' }, rows)

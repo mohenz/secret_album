@@ -3,7 +3,7 @@ import { api } from '../shared/api.js';
 import { albumForm, modelForm } from '../shared/forms.js';
 import { albumCard, photoFrame, PhotoFlow } from '../shared/gallery.js';
 import { boot, isOwner } from '../shared/layout.js';
-import { button, confirmDialog, el, errorState, emptyState, iconButton, joinMeta, loadingState, openMenu, plural, toastError } from '../shared/ui.js';
+import { button, confirmDialog, el, errorState, emptyState, iconButton, joinMeta, loadingState, openMenu, plural, toastError, setChildren } from '../shared/ui.js';
 import { openViewer } from '../shared/viewer.js';
 
 const main = document.getElementById('main');
@@ -41,7 +41,7 @@ try {
       onClose: (p) => { setPhotoParam(null); if (p) flow.focusPhoto(p.id); },
     }),
   });
-  main.replaceChildren(
+  setChildren(main,
     el('section', { class: 'model-hero', 'aria-labelledby': 'model-name' },
       photoFrame(model.cover?.id, { color: model.cover?.color, sizes: '(min-width: 1024px) 42vw, 100vw', variant: 'large', eager: true, alt: '' }),
       el('div', { class: 'model-hero-text' },

@@ -95,10 +95,18 @@ def sample_files() -> list[Path]:
     return files
 
 
+def no_null_text(page, name: str) -> None:
+    """조건부 자식이 "null"·"undefined" 글자로 화면에 나오지 않는지 확인한다."""
+    text = page.evaluate("document.body.innerText")
+    stray = [w for w in ("null", "undefined") if re.search(rf"(^|\s){w}(\s|$)", text)]
+    check(f"{name}: null·undefined 글자 없음", not stray, ", ".join(stray))
+
+
 def layout_checks(page, name: str) -> None:
     """Bloom 7.1: 모바일은 조작 요소 44px 이상, 데스크톱은 36px 이상(아이콘 버튼 40px)."""
     overflow = page.evaluate("document.documentElement.scrollWidth - window.innerWidth")
     check(f"{name}: 가로 넘침 없음", overflow <= 1, f"{overflow}px")
+    no_null_text(page, name)
     mobile = page.viewport_size["width"] < 768
     minimum = 43.5 if mobile else 35.5
     small = page.evaluate(
@@ -130,6 +138,8 @@ def run() -> int:
         page.wait_for_url(re.compile(r"/login\.html"))
         check("로그인 전 앱 화면 접근 → 로그인 화면", "/login.html" in page.url)
         check("로그인 화면에 사진 없음", page.locator("img").count() == 0)
+        page.wait_for_selector("#login-id")
+        no_null_text(page, "로그인")
         page.fill("#login-id", "owner.e2e")
         page.fill("#password", "wrong-password-1")
         page.click("button[type=submit]")

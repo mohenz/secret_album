@@ -14,6 +14,11 @@ export function icon(name, className = '') {
   return svg;
 }
 
+// replaceChildren()·append()는 null을 "null" 글자로 넣으므로, 조건부 자식은 이 함수로 거른다.
+export function setChildren(parent, ...children) {
+  parent.replaceChildren(...children.flat().filter((child) => child !== null && child !== undefined && child !== false));
+}
+
 export function el(tag, attrs = {}, ...children) {
   const node = document.createElement(tag);
   for (const [key, value] of Object.entries(attrs || {})) {

@@ -1,6 +1,6 @@
 // 잠금·로그인 화면. 사진·모델 정보는 전혀 보여 주지 않는다.
 import { api, ApiError } from '../shared/api.js';
-import { el, icon, setBusy } from '../shared/ui.js';
+import { el, icon, setBusy, setChildren } from '../shared/ui.js';
 
 const card = document.getElementById('auth-card');
 const params = new URLSearchParams(location.search);
@@ -12,7 +12,7 @@ function nextUrl() {
 }
 
 function frame(title, description, ...content) {
-  card.replaceChildren(
+  setChildren(card,
     el('div', { class: 'auth-brand' }, 'Secret Album'),
     el('h1', { id: 'auth-title' }, title),
     description ? el('p', { class: 'hint' }, description) : null,

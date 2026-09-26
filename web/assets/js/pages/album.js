@@ -5,7 +5,7 @@ import { albumCard, photoFrame, PhotoFlow } from '../shared/gallery.js';
 import { boot, isOwner } from '../shared/layout.js';
 import { enablePageDrop, Uploader } from '../shared/uploader.js';
 import {
-  button, confirmDialog, el, errorState, emptyState, formatDate, formatNumber, icon, iconButton, joinMeta, loadingState, openMenu, plural, showDialog, toast, toastError,
+  button, confirmDialog, el, errorState, emptyState, formatDate, formatNumber, icon, iconButton, joinMeta, loadingState, openMenu, plural, setChildren, showDialog, toast, toastError,
 } from '../shared/ui.js';
 import { openViewer, saveSlideshowOptions, slideshowOptions } from '../shared/viewer.js';
 
@@ -205,7 +205,7 @@ function render() {
     onSelectionChange: renderBulkBar,
     onReorder: reorder,
   });
-  main.replaceChildren(
+  setChildren(main,
     el('section', { class: 'album-cover', 'aria-labelledby': 'album-title' },
       cover ? photoFrame(cover.id, { color: album.cover.color, photo: cover, sizes: '100vw', variant: 'large', eager: true }) : null,
       el('div', { class: 'hero-caption' },
