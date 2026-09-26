@@ -2,6 +2,7 @@
 // 붙여넣기(Ctrl+V)·끌어 놓기·파일 선택으로 들어온 이미지를 받는 즉시 한 장씩 순서대로 저장하고,
 // 한 줄 상태 표시로 진행 상황을 알린다: 저장 중(대기 n장) → 완료(4초 뒤 사라짐) / 건너뜀 / 실패.
 import { uploadFile } from './api.js';
+import { addLockGuard } from './privacy.js';
 import { el, icon, plural } from './ui.js';
 
 const IMAGE_NAME = /\.(jpe?g|png|webp|heic|heif)$/i;
@@ -52,13 +53,22 @@ export class QuickUploader {
   constructor({ getAlbumId, status, onSaved, onNoAlbum, onIdle }) {
     Object.assign(this, { getAlbumId, status, onSaved, onNoAlbum, onIdle });
     this.queue = [];
+    this.pending = [];  // 앨범을 고르기 전에 들어온 이미지. 앨범을 고르면 이어서 저장한다.
     this.processing = false;
+    addLockGuard(() => this.busy());
     this.batch = { saved: 0, skipped: 0, failed: 0, total: 0 };
     addEventListener('beforeunload', (event) => { if (this.busy()) { event.preventDefault(); event.returnValue = ''; } });
   }
 
   busy() {
     return this.processing || this.queue.length > 0;
+  }
+
+  // 앨범을 고른 뒤 호출: 기다리던 이미지를 저장한다.
+  resume() {
+    if (!this.pending.length || !this.getAlbumId()) return;
+    const files = this.pending.splice(0);
+    this.add(files, 'pending');
   }
 
   add(fileList, source = 'upload') {
@@ -69,7 +79,11 @@ export class QuickUploader {
       return;
     }
     const albumId = this.getAlbumId();
-    if (!albumId) { this.onNoAlbum?.(); return; }
+    if (!albumId) {
+      this.pending.push(...images.map((file, index) => normalizeFile(file, source, images.length > 1 ? index : 0)));
+      this.onNoAlbum?.(this.pending.length);
+      return;
+    }
     if (!this.busy()) this.batch = { saved: 0, skipped: 0, failed: 0, total: 0 };
     images.forEach((file, index) => this.queue.push({ file: normalizeFile(file, source, images.length > 1 ? index : 0), albumId }));
     this.batch.total += images.length;

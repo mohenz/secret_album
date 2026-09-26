@@ -6,7 +6,7 @@ import { albumForm } from '../shared/forms.js';
 import { photoFrame } from '../shared/gallery.js';
 import { boot } from '../shared/layout.js';
 import { canReadClipboard, createStatusLine, enablePageDrop, enablePagePaste, QuickUploader, readClipboardImages } from '../shared/uploader.js';
-import { button, el, errorState, formatDateTime, icon, joinMeta, loadingState, setChildren, toast, toastError } from '../shared/ui.js';
+import { button, el, errorState, formatDateTime, icon, joinMeta, loadingState, plural, setChildren, toast, toastError } from '../shared/ui.js';
 
 const main = document.getElementById('main');
 await boot({ ownerOnly: true });
@@ -28,6 +28,7 @@ albumSelect.addEventListener('change', () => {
   try { localStorage.setItem(ALBUM_KEY, albumSelect.value); } catch { /* 이 기기에 저장할 수 없음 */ }
   albumError.textContent = '';
   albumSelect.removeAttribute('aria-invalid');
+  uploader?.resume();
 });
 
 async function loadAlbums(selectId) {
@@ -44,10 +45,10 @@ const status = createStatusLine();
 const uploader = new QuickUploader({
   getAlbumId: () => albumSelect.value,
   status,
-  onNoAlbum: () => {
+  onNoAlbum: (waiting) => {
     albumSelect.setAttribute('aria-invalid', 'true');
-    albumError.replaceChildren(icon('circle-alert'), el('span', {}, 'Choose an album to upload to first.'));
-    status.set('Choose an album first, then paste or drop the images again.', 'error');
+    albumError.replaceChildren(icon('circle-alert'), el('span', {}, 'Choose an album to upload to.'));
+    status.set(`${plural(waiting, 'image')} waiting. Choose an album and they will be saved.`, 'skipped');
     albumSelect.focus();
   },
   onSaved: () => loadReview(),

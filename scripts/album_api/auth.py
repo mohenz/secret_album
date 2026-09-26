@@ -79,6 +79,9 @@ class RateLimiter:
     def check(self, key: str) -> None:
         now = time.monotonic()
         with self._lock:
+            # 1분 넘게 조용한 IP는 지워 메모리가 계속 늘지 않게 한다.
+            if len(self._hits) > 1000:
+                self._hits = {k: v for k, v in self._hits.items() if v and now - v[-1] < 60}
             hits = [t for t in self._hits.get(key, []) if now - t < 60]
             if len(hits) >= self.per_minute:
                 self._hits[key] = hits

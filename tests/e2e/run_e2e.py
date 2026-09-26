@@ -209,6 +209,14 @@ def run() -> int:
           document.body.dispatchEvent(new ClipboardEvent('paste', { clipboardData: data, bubbles: true, cancelable: true })); }""")
         expect(page.locator(".quick-status")).to_contain_text("The clipboard has no image")
         check("이미지 없는 붙여넣기 안내", True)
+        # 4-1-2. 앨범을 고르기 전에 붙여넣으면 기다렸다가, 앨범을 고르면 저장한다.
+        page.select_option("#album", "")
+        page.evaluate(paste_png, "#8ab17d")
+        expect(page.locator(".quick-status")).to_contain_text("1 image waiting")
+        page.select_option("#album", album_id)
+        expect(page.locator(".quick-status")).to_contain_text("Saved: clipboard-", timeout=30000)
+        check("앨범 선택 전 붙여넣기 → 선택하면 저장", True)
+        page.wait_for_function("document.querySelector('.quick-review-card') && document.querySelector('.quick-review-card').querySelector('.badge-success')", timeout=30000)
         # 4-2. 실제 클립보드 + 키보드 Ctrl+V. 앨범 선택칸에 포커스가 있어도 올라가야 한다.
         page.evaluate("""async () => {
           const canvas = document.createElement('canvas'); canvas.width = 320; canvas.height = 240;
@@ -226,7 +234,7 @@ def run() -> int:
         # 5. 앨범 감상
         page.goto(album_url)
         page.wait_for_selector(".flow-item img.loaded")
-        check("앨범 사진 흐름 8장(붙여넣기 포함)", page.locator(".flow-item").count() == 8)
+        check("앨범 사진 흐름 9장(붙여넣기 포함)", page.locator(".flow-item").count() == 9)
         check("앨범 표지 제목", page.locator("#album-title").inner_text() == "Autumn Seongsu Studio")
         img_src = page.locator(".flow-item img").first.get_attribute("src")
         check("사진은 API /media 경로로만 제공", f":{API_PORT}/media/" in img_src)
@@ -239,7 +247,7 @@ def run() -> int:
         page.wait_for_timeout(600)  # 열림 전환이 끝난 뒤 키 입력
         check("뷰어 열림 + URL photo 반영", "photo=" in page.url)
         page.keyboard.press("ArrowRight")
-        expect(page.locator(".pswp__counter")).to_have_text("2 / 8")
+        expect(page.locator(".pswp__counter")).to_have_text("2 / 9")
         check("방향키로 다음 사진", True)
         page.keyboard.press("f")
         page.wait_for_selector("text=Added to favorites.")
@@ -256,7 +264,7 @@ def run() -> int:
         # 6-1. 앨범 화면에서 바로 붙여넣기 → 이 앨범에 업로드
         page.evaluate(paste_png, "#e76f51")
         expect(page.locator(".quick-status.floating")).to_contain_text("Saved: clipboard-", timeout=30000)
-        page.wait_for_function("document.querySelectorAll('.flow-item').length === 9", timeout=15000)
+        page.wait_for_function("document.querySelectorAll('.flow-item').length === 10", timeout=15000)
         check("앨범 화면 붙여넣기 → 앨범에 추가", True)
 
         # 7. 편집 모드: 2장 선택 → 휴지통
@@ -268,7 +276,7 @@ def run() -> int:
         expect(page.locator(".bulk-bar .count")).to_have_text("2 selected")
         page.click(".bulk-bar button:has-text('Move to trash')")
         page.wait_for_selector("text=Moved 2 photos to trash.")
-        page.wait_for_function("document.querySelectorAll('.flow-item').length === 7")
+        page.wait_for_function("document.querySelectorAll('.flow-item').length === 8")
         check("편집 모드 일괄 휴지통 이동", True)
         page.click("#edit-done")
 

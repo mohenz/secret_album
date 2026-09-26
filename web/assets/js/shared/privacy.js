@@ -7,6 +7,14 @@ let idleTimer;
 let warnTimer;
 let closeWarning;
 let idleMs = 15 * 60 * 1000;
+const lockGuards = new Set();
+
+// 업로드·슬라이드쇼처럼 입력 없이 진행 중인 작업이 있으면 자동 잠금을 미룬다.
+export function addLockGuard(isBusy) {
+  lockGuards.add(isBusy);
+  return () => lockGuards.delete(isBusy);
+}
+const lockDeferred = () => [...lockGuards].some((isBusy) => { try { return isBusy(); } catch { return false; } });
 
 export function isShielded() {
   return document.documentElement.dataset.shielded === 'true';
@@ -38,9 +46,10 @@ function resetIdle() {
   closeWarning = null;
   if (idleMs <= 0) return;
   warnTimer = setTimeout(() => {
+    if (lockDeferred()) return;
     closeWarning = toast('The screen will lock in 30 seconds. Move the mouse or press a key to stay.', { duration: 30000 });
   }, Math.max(0, idleMs - 30000));
-  idleTimer = setTimeout(lockNow, idleMs);
+  idleTimer = setTimeout(() => { if (lockDeferred()) resetIdle(); else lockNow(); }, idleMs);
 }
 
 export function setBlurThumbnails(on) {

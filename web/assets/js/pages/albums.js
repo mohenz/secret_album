@@ -12,6 +12,7 @@ let sort = params.get('sort') || 'shot_desc';
 let offset = 0;
 
 const grid = el('div', { class: 'cover-grid', role: 'list' });
+const empty = el('div', { hidden: true });
 const more = button('Load more', { variant: 'btn-outline', onclick: () => loadMore() });
 const moreRow = el('div', { class: 'row-actions', hidden: true }, more);
 const count = el('p', { class: 'text-meta', role: 'status' });
@@ -38,9 +39,10 @@ async function loadMore() {
   try {
     const data = await api(`/albums?sort=${sort}&limit=${PAGE}&offset=${offset}`);
     if (offset === 0 && !data.items.length) {
-      grid.replaceWith(emptyState('images', 'No albums yet', isOwner() ? 'Create an album and upload photos.' : 'No albums have been shared with you yet.'));
+      empty.replaceChildren(emptyState('images', 'No albums yet', isOwner() ? 'Create an album and upload photos.' : 'No albums have been shared with you yet.'));
     }
     grid.append(...data.items.map((a) => { const card = albumCard(a); card.setAttribute('role', 'listitem'); return card; }));
+    empty.hidden = !(offset === 0 && !data.items.length);
     offset += data.items.length;
     count.textContent = plural(data.total, 'album');
     moreRow.hidden = offset >= data.total;
@@ -56,5 +58,5 @@ function reload() {
 }
 
 await boot({ active: 'albums' });
-main.replaceChildren(head(), grid, moreRow);
+main.replaceChildren(head(), grid, empty, moreRow);
 reload();

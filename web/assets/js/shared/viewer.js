@@ -1,6 +1,7 @@
 // 사진 뷰어 (PhotoSwipe 5). 어두운 고정 배경(예외 E2), 컨트롤 자동 숨김, 슬라이드쇼, 정보 패널.
 import PhotoSwipeLightbox from '/assets/vendor/photoswipe/photoswipe-lightbox.esm.min.js';
 import { api, mediaUrl, srcsetFor } from './api.js';
+import { addLockGuard } from './privacy.js';
 import { el, formatBytes, formatDateTime, icon, joinMeta, showDialog, toast, toastError } from './ui.js';
 
 const SLIDESHOW_KEY = 'album-slideshow';
@@ -60,6 +61,7 @@ export function openViewer(config) {
   let hideTimer;
   let slideshowTimer;
   let playing = false;
+  const releaseLockGuard = addLockGuard(() => playing);
   let infoPanel = null;
   const slide = () => items[pswp.currIndex];
 
@@ -261,7 +263,7 @@ export function openViewer(config) {
     else if (key === '?') { event.preventDefault(); showHelp(); }
     else if (key === 'Escape' && infoPanel) { event.preventDefault(); closeInfo(); }
   });
-  lightbox.on('close', () => { stopSlideshow(); clearTimeout(hideTimer); });
+  lightbox.on('close', () => { stopSlideshow(); clearTimeout(hideTimer); releaseLockGuard(); });
   lightbox.on('destroy', () => config.onClose?.(slide?.() || null));
   lightbox.init();
   lightbox.loadAndOpen(startIndex);
