@@ -1,5 +1,4 @@
 import logging
-from http.server import ThreadingHTTPServer
 
 from album_api import database, logs
 from album_api.config import Settings
@@ -12,8 +11,7 @@ def main() -> None:
     logs.setup("api")
     settings = Settings.from_environment()
     database.configure(settings.db_pool_size)
-    server = ThreadingHTTPServer((settings.api_host, settings.api_port), Handler)
-    server.daemon_threads = True
+    server = logs.QuietThreadingHTTPServer((settings.api_host, settings.api_port), Handler)
     logging.getLogger("album.api").info("비밀앨범 API: http://%s:%s", settings.api_host, settings.api_port)
     try:
         server.serve_forever()

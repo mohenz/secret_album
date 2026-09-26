@@ -173,7 +173,7 @@ class AlbumRequestHandler(BaseHTTPRequestHandler):
             self._error(exc.status, exc.code, exc.message)
         except database.PoolTimeoutError as exc:
             self._error(503, "busy", str(exc))
-        except (BrokenPipeError, ConnectionResetError):
+        except (BrokenPipeError, ConnectionResetError, ConnectionAbortedError):
             self.close_connection = True
         except Exception:
             logger.exception("unhandled error %s %s", method, path)
@@ -246,6 +246,9 @@ class AlbumRequestHandler(BaseHTTPRequestHandler):
         origin = self.headers.get("Origin")
         if origin in self.settings.web_origins:
             self._cors(origin)
+        else:
+            # CORS 응답과 일반 응답이 캐시에서 섞이지 않게 한다.
+            self.send_header("Vary", "Origin")
         self.send_header("X-Content-Type-Options", "nosniff")
         self.send_header("X-Frame-Options", "DENY")
         self.send_header("Referrer-Policy", "no-referrer")
@@ -269,7 +272,10 @@ class AlbumRequestHandler(BaseHTTPRequestHandler):
         payload = {"error": {"code": code, "message": message}}
         if detail:
             payload["error"]["detail"] = detail
-        self._json(status, payload)
+        try:
+            self._json(status, payload)
+        except (BrokenPipeError, ConnectionResetError, ConnectionAbortedError):
+            self.close_connection = True
 
     def _cors(self, origin: str) -> None:
         self.send_header("Access-Control-Allow-Origin", origin)
@@ -290,7 +296,8 @@ class AlbumRequestHandler(BaseHTTPRequestHandler):
         self.send_header("Content-Type", content_type)
         self.send_header("Content-Length", str(size))
         self.send_header("ETag", etag)
-        self.send_header("Cache-Control", "private, max-age=86400" if cache else "no-store")
+        # 브라우저는 사진을 보관하되, 쓸 때마다 서버에 세션을 확인받는다(304). 로그아웃·잠금 뒤에는 401이 되어 보이지 않는다.
+        self.send_header("Cache-Control", "private, no-cache" if cache else "no-store")
         self.send_header("Last-Modified", formatdate(path.stat().st_mtime, usegmt=True))
         if download_name:
             self.send_header("Content-Disposition", f"attachment; filename*=UTF-8''{quote(download_name)}")

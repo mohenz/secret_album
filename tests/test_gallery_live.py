@@ -44,7 +44,7 @@ class GalleryLiveTests(unittest.TestCase):
         response, _, content = self.owner.request("GET", f"/media/{photo_id}/thumb")
         self.assertEqual(response.status, 200)
         self.assertEqual(response.getheader("Content-Type"), "image/webp")
-        self.assertIn("private", response.getheader("Cache-Control"))
+        self.assertEqual(response.getheader("Cache-Control"), "private, no-cache")
         from PIL import Image
 
         with Image.open(io.BytesIO(content)) as thumb:

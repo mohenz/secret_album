@@ -6,7 +6,7 @@
 import argparse
 import functools
 import logging
-from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
+from http.server import SimpleHTTPRequestHandler
 from pathlib import Path
 
 from album_api import logs
@@ -27,6 +27,20 @@ class WebHandler(SimpleHTTPRequestHandler):
         ".svg": "image/svg+xml",
         ".woff2": "font/woff2",
     }
+
+    api_port = 3051
+
+    def do_GET(self) -> None:
+        # API 포트는 서버 설정을 따른다 (web/assets/js/api-config.js는 기본값 파일).
+        if self.path.split("?", 1)[0] == "/assets/js/api-config.js":
+            body = f"export const API_BASE = `${{location.protocol}}//${{location.hostname}}:{self.api_port}`;\n".encode("utf-8")
+            self.send_response(200)
+            self.send_header("Content-Type", "text/javascript; charset=utf-8")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+            return
+        super().do_GET()
 
     def list_directory(self, path):  # 폴더 목록은 보여 주지 않는다.
         self.send_error(404, "Not Found")
@@ -61,9 +75,9 @@ def main() -> None:
     args = parser.parse_args()
     logs.setup("web")
     # 화면은 접속한 호스트 이름 그대로 API 포트에 요청한다.
+    WebHandler.api_port = args.api_port
     WebHandler.api_sources = f"http://*:{args.api_port} https://*:{args.api_port} http://localhost:{args.api_port} http://127.0.0.1:{args.api_port}"
-    server = ThreadingHTTPServer((args.bind, args.port), functools.partial(WebHandler, directory=str(WEB_ROOT)))
-    server.daemon_threads = True
+    server = logs.QuietThreadingHTTPServer((args.bind, args.port), functools.partial(WebHandler, directory=str(WEB_ROOT)))
     logger.info("비밀앨범 화면: http://%s:%s", args.bind, args.port)
     try:
         server.serve_forever()

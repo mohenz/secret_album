@@ -227,7 +227,7 @@ cinetube는 로그인 없는 로컬 서비스이고 `local/media`를 정적 웹�
 
 ```text
 Content-Type: image/webp (원본은 실제 형식)
-Cache-Control: private, max-age=86400        (설정의 "캐시 사용 안 함" 선택 시 no-store)
+Cache-Control: private, no-cache             (브라우저가 보관하되 매번 세션을 재확인, 304. "캐시 사용 안 함" 선택 시 no-store)
 ETag: "<photo_id>-<종류>-<sha256 앞 12자>"
 X-Content-Type-Options: nosniff
 Content-Disposition: inline  (원본 다운로드 시 attachment + 원본 파일명)

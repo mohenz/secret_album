@@ -1,15 +1,82 @@
+/*
+  Bloom UI 의미 토큰 — shadcn/ui neutral(base) + blue(theme) 값 (apps/v4/registry/themes.ts)
+  예외 E1: 다크 테마가 기본값이다. 라이트는 [data-theme="light"]로 선택한다.
+  예외 E2: viewer-* 토큰은 두 테마에서 같은 어두운 값이다.
+*/
 :root {
   color-scheme: dark;
-  --surface-base: #09090b;
-  --surface-elevated: #121215;
-  --surface-hover: #18181b;
-  --viewer-background: #000;
-  --foreground: #f4f4f5;
-  --muted-foreground: #a1a1aa;
-  --faint-foreground: #52525b;
-  --primary: #3b82f6;
-  --border-hairline: rgb(255 255 255 / 8%);
-  --scrim-bottom: linear-gradient(180deg, transparent 0%, rgb(0 0 0 / 82%) 100%);
-  --radius-control: 10px;
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.205 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.424 0.199 265.638);
+  --primary-foreground: oklch(0.97 0.014 254.604);
+  --secondary: oklch(0.269 0 0);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.708 0 0);
+  --accent: oklch(0.269 0 0);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.704 0.191 22.216);
+  --destructive-foreground: oklch(0.145 0 0);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.623 0.214 259.815);
+  --success: oklch(0.792 0.209 151.711);
+  --success-foreground: oklch(0.145 0 0);
+  --warning: oklch(0.828 0.189 84.429);
+  --warning-foreground: oklch(0.145 0 0);
+  --info: oklch(0.707 0.165 254.624);
+  --info-foreground: oklch(0.145 0 0);
+
+  --viewer-background: oklch(0.1 0 0);
+  --viewer-foreground: oklch(0.985 0 0);
+  --viewer-muted: oklch(0.708 0 0);
+  --scrim-bottom: linear-gradient(180deg, oklch(0 0 0 / 0%) 0%, oklch(0 0 0 / 60%) 100%);
+  --scrim-top: linear-gradient(0deg, oklch(0 0 0 / 0%) 0%, oklch(0 0 0 / 55%) 100%);
+  --placeholder: oklch(0.205 0 0);
+  --overlay: oklch(0 0 0 / 70%);
+
+  --radius: 0.625rem;
+  --radius-photo: 0;
+  --font-sans: "Pretendard Variable", Pretendard, "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  --font-mono: "JetBrains Mono", "D2Coding", monospace;
+  --gap-photo: 2px;
+  --gap-cover: 4px;
+  --header-height: 64px;
+  --motion-fast: 150ms;
+  --motion-base: 250ms;
 }
 
+:root[data-theme="light"] {
+  color-scheme: light;
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.145 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0 0);
+  --primary: oklch(0.488 0.243 264.376);
+  --primary-foreground: oklch(0.97 0.014 254.604);
+  --secondary: oklch(0.967 0.001 286.375);
+  --secondary-foreground: oklch(0.21 0.006 285.885);
+  --muted: oklch(0.97 0 0);
+  --muted-foreground: oklch(0.47 0 0);
+  --accent: oklch(0.97 0 0);
+  --accent-foreground: oklch(0.205 0 0);
+  --destructive: oklch(0.577 0.245 27.325);
+  --destructive-foreground: oklch(0.985 0 0);
+  --border: oklch(0.922 0 0);
+  --input: oklch(0.87 0 0);
+  --ring: oklch(0.488 0.243 264.376);
+  --success: oklch(0.527 0.154 150.069);
+  --success-foreground: oklch(0.985 0 0);
+  --warning: oklch(0.555 0.163 48.998);
+  --warning-foreground: oklch(0.985 0 0);
+  --info: oklch(0.488 0.243 264.376);
+  --info-foreground: oklch(0.985 0 0);
+  --placeholder: oklch(0.922 0 0);
+  --overlay: oklch(0 0 0 / 55%);
+}
