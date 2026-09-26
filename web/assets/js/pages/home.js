@@ -28,6 +28,8 @@ async function load() {
   if (data.hero) {
     const hero = data.hero;
     blocks.push(el('section', { class: 'hero', 'aria-labelledby': 'hero-title' },
+      // 사진 전체를 보여 주고(잘라 내지 않음), 남는 여백은 같은 사진을 흐리게 깔아 채운다.
+      el('div', { class: 'hero-backdrop', 'aria-hidden': 'true' }, photoFrame(hero.cover.id, { color: hero.cover.color, variant: 'thumb', alt: '' })),
       el('a', { class: 'photo-link', href: `/pages/album.html?id=${hero.id}`, tabindex: '-1', 'aria-hidden': 'true' },
         photoFrame(hero.cover.id, { color: hero.cover.color, photo: { id: hero.cover.id, w: hero.cover.w, h: hero.cover.h }, sizes: '100vw', variant: 'large', eager: true })),
       el('div', { class: 'hero-caption' },

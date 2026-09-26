@@ -34,7 +34,11 @@ main.page { min-height: 100vh; }
 /* ------------------------------------------------ 홈 히어로 */
 .hero { position: relative; height: 100vh; height: 100svh; min-height: 480px; color: var(--viewer-foreground); background: var(--viewer-background); }
 @media (min-width: 1024px) { .hero { height: 85vh; } }
-.hero .photo-frame { position: absolute; inset: 0; }
+.hero { overflow: hidden; }
+.hero .photo-frame { position: absolute; inset: 0; background: transparent; }
+.hero .photo-link .photo-frame img { object-fit: contain; }
+.hero-backdrop { position: absolute; inset: 0; }
+.hero-backdrop .photo-frame img { object-fit: cover; filter: blur(40px) brightness(0.45) saturate(1.1); transform: scale(1.2); }
 .hero::after { content: ""; position: absolute; inset: 40% 0 0 0; background: var(--scrim-bottom); pointer-events: none; }
 .hero-caption { position: absolute; z-index: 1; left: 16px; right: 16px; bottom: max(32px, env(safe-area-inset-bottom)); display: grid; gap: 8px; max-width: 900px; }
 @media (min-width: 768px) { .hero-caption { left: 32px; bottom: 48px; } }
