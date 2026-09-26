@@ -87,6 +87,10 @@ class GalleryLiveTests(unittest.TestCase):
         status, photos = self.owner.json("GET", f"/albums/{self.album_id}/photos")
         self.assertEqual([p["id"] for p in photos["items"]], list(reversed(ids)))
         type(self).photo_ids = ids
+        status, lib = self.owner.json("GET", f"/library?album_id={self.album_id}&sort=name_asc&limit=2")
+        self.assertEqual((status, lib["total"], len(lib["items"])), (200, 3, 2))
+        self.assertTrue(any(item["is_album_cover"] for item in self.owner.json("GET", f"/library?album_id={self.album_id}")[1]["items"]))
+        self.assertEqual(self.owner.json("GET", "/library?q=" + quote("SEOYUN_0912_0034"))[1]["total"] >= 1, True)
         status, recent = self.owner.json("GET", "/uploads/recent?limit=2")
         self.assertEqual(status, 200)
         self.assertEqual(len(recent["items"]), 2)

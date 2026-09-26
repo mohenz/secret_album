@@ -14,6 +14,13 @@ MODEL_SORTS = {
 }
 DEFAULT_MODEL_SORT = "name_asc"
 
+LIBRARY_SORTS = {
+    "shot_desc": "p.taken_at DESC NULLS LAST, p.created_at DESC",
+    "added_desc": "p.created_at DESC",
+    "name_asc": "p.original_filename ASC, p.created_at DESC",
+}
+DEFAULT_LIBRARY_SORT = "shot_desc"
+
 BULK_ACTIONS = frozenset(
     {"favorite", "unfavorite", "tag", "untag", "move", "set_album_cover", "set_model_cover", "set_pause", "unset_pause", "trash", "reorder"}
 )

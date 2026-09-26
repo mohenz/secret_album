@@ -12,6 +12,8 @@ from .tables import (
     ALBUM_FIELDS,
     ALBUM_SORTS,
     DEFAULT_ALBUM_SORT,
+    DEFAULT_LIBRARY_SORT,
+    LIBRARY_SORTS,
     DEFAULT_MODEL_SORT,
     MODEL_FIELDS,
     MODEL_SORTS,
@@ -719,6 +721,56 @@ def create_photo(cursor, actor, album_id: str, filename: str, upload: dict) -> d
     )
     row = cursor.fetchone()
     return {"id": str(row["id"]), "created_at": row["created_at"], "album_id": album_id}
+
+
+def library(cursor, actor, model_id: str | None = None, album_id: str | None = None, query: str = "", sort: str | None = None,
+            limit: int = 120, offset: int = 0) -> dict:
+    """Studio 사진 관리 목록: 필터·검색·정렬과 전체 개수."""
+    order = LIBRARY_SORTS.get(sort or DEFAULT_LIBRARY_SORT, LIBRARY_SORTS[DEFAULT_LIBRARY_SORT])
+    where = ["p.deleted_at IS NULL", "a.deleted_at IS NULL", "m.deleted_at IS NULL"]
+    params: dict = {"actor_id": actor.user_id}
+    if model_id:
+        where.append("p.model_id = %(model_id)s")
+        params["model_id"] = parse_uuid(model_id, "model")
+    if album_id:
+        where.append("p.album_id = %(album_id)s")
+        params["album_id"] = parse_uuid(album_id, "album")
+    query = " ".join((query or "").split())[:80]
+    if query:
+        params["pattern"] = "%" + query.replace("\\", "\\\\").replace("%", "\%").replace("_", "\_") + "%"
+        where.append(
+            "(p.original_filename ILIKE %(pattern)s OR p.caption ILIKE %(pattern)s OR p.camera ILIKE %(pattern)s OR a.title ILIKE %(pattern)s"
+            " OR EXISTS (SELECT 1 FROM photo_tags pt JOIN tags t ON t.id = pt.tag_id WHERE pt.photo_id = p.id AND t.name ILIKE %(pattern)s))"
+        )
+    clause = " AND ".join(where)
+    base = "FROM photos p JOIN albums a ON a.id = p.album_id JOIN models m ON m.id = p.model_id"
+    cursor.execute(f"SELECT count(*) AS n {base} WHERE {clause}", params)
+    total = cursor.fetchone()["n"]
+    cursor.execute(
+        f"""
+        SELECT p.id, p.original_filename, p.width, p.height, p.dominant_color, p.status, p.is_pause, p.taken_at, p.created_at,
+               p.byte_size, p.exposure, p.camera, p.lens, p.album_id, a.title AS album_title, p.model_id, m.name AS model_name,
+               (p.id = COALESCE(a.cover_photo_id, (SELECT c.id FROM photos c WHERE c.album_id = a.id AND c.status = 'ready'
+                        AND c.deleted_at IS NULL ORDER BY c.position LIMIT 1))) AS is_album_cover,
+               (p.id = COALESCE(m.cover_photo_id, (SELECT c.id FROM photos c WHERE c.model_id = m.id AND c.status = 'ready'
+                        AND c.deleted_at IS NULL ORDER BY c.created_at LIMIT 1))) AS is_model_cover,
+               EXISTS (SELECT 1 FROM favorites f WHERE f.photo_id = p.id AND f.user_id = %(actor_id)s) AS fav
+        {base} WHERE {clause} ORDER BY {order} LIMIT %(limit)s OFFSET %(offset)s
+        """,
+        {**params, "limit": max(1, min(limit, 500)), "offset": max(0, offset)},
+    )
+    items = [
+        {
+            "id": str(r["id"]), "filename": r["original_filename"], "w": r["width"] or 3, "h": r["height"] or 4,
+            "color": r["dominant_color"], "status": r["status"], "pause": r["is_pause"], "fav": r["fav"],
+            "taken_at": _iso(r["taken_at"]), "created_at": _iso(r["created_at"]), "byte_size": r["byte_size"],
+            "exposure": r["exposure"] or {}, "camera": r["camera"], "lens": r["lens"],
+            "album_id": str(r["album_id"]), "album_title": r["album_title"], "model_id": str(r["model_id"]), "model_name": r["model_name"],
+            "is_album_cover": bool(r["is_album_cover"]), "is_model_cover": bool(r["is_model_cover"]),
+        }
+        for r in cursor.fetchall()
+    ]
+    return {"items": items, "total": total}
 
 
 def recent_uploads(cursor, limit: int = 200) -> list[dict]:

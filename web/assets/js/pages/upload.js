@@ -9,8 +9,8 @@ import { canReadClipboard, createStatusLine, enablePageDrop, enablePagePaste, Qu
 import { button, el, errorState, formatDateTime, icon, joinMeta, loadingState, plural, setChildren, toast, toastError } from '../shared/ui.js';
 
 const main = document.getElementById('main');
-await boot({ ownerOnly: true });
-main.className = 'manage-page quick-page';
+await boot({ ownerOnly: true, studio: true, active: 'upload' });
+main.className = 'manage-page';
 main.replaceChildren(loadingState());
 
 const ALBUM_KEY = 'album-quick-upload-album';
@@ -31,14 +31,36 @@ albumSelect.addEventListener('change', () => {
   uploader?.resume();
 });
 
+let models = [];
+let pickedModel = '';
+const modelPicker = el('div', { class: 'model-pick', role: 'group', 'aria-label': 'Model' });
+
+function renderModelPicker() {
+  const option = (id, label, initial) => el('button', { type: 'button', 'aria-pressed': String(pickedModel === id), onclick: () => {
+    pickedModel = id;
+    renderModelPicker();
+    fillAlbumSelect(albumSelect.value);
+  } }, el('span', { class: 'initial', 'aria-hidden': 'true' }, initial), el('span', {}, label), pickedModel === id ? icon('circle-check') : null);
+  modelPicker.replaceChildren(option('', 'All models', '∗'), ...models.map((m) => option(m.id, m.name, m.name.trim().charAt(0).toUpperCase())));
+}
+
+function fillAlbumSelect(keepId) {
+  const list = albums.filter((a) => !pickedModel || a.model_id === pickedModel);
+  albumSelect.replaceChildren(el('option', { value: '' }, 'Choose an album'), ...list.map((a) => el('option', { value: a.id }, joinMeta(a.title, a.model_name))));
+  albumSelect.value = list.some((a) => a.id === keepId) ? keepId : '';
+  if (!albumSelect.value && list.length === 1) albumSelect.value = list[0].id;
+  uploader?.resume();
+}
+
 async function loadAlbums(selectId) {
   albums = (await api('/albums?sort=added_desc&limit=1000')).items;
   let remembered = null;
   try { remembered = localStorage.getItem(ALBUM_KEY); } catch { /* 없음 */ }
-  albumSelect.replaceChildren(el('option', { value: '' }, 'Choose an album'),
-    ...albums.map((a) => el('option', { value: a.id }, joinMeta(a.title, a.model_name))));
+  models = (await api('/models?sort=name_asc')).items;
   const wanted = [selectId, remembered].find((id) => id && albums.some((a) => a.id === id));
-  albumSelect.value = wanted || '';
+  if (wanted) pickedModel = albums.find((a) => a.id === wanted).model_id;
+  renderModelPicker();
+  fillAlbumSelect(wanted || '');
 }
 
 const status = createStatusLine();
@@ -58,11 +80,16 @@ const fileInput = el('input', { type: 'file', id: 'files', multiple: true, accep
 fileInput.addEventListener('change', () => { uploader.add(fileInput.files, 'upload'); fileInput.value = ''; });
 
 // 드롭존은 라벨이라 클릭하면 파일 선택이 열린다. 키보드는 Enter·Space로 연다.
-const dropzone = el('label', { class: 'quick-dropzone', for: 'files', tabindex: '0', id: 'dropzone' },
-  icon('image-plus', 'icon-32'),
-  el('strong', {}, 'Paste (Ctrl+V) or drag images here'),
-  el('small', {}, 'Images are saved as soon as you paste them. Paste several and they are saved in order. Click to choose files.'),
+const dropzone = el('div', { class: 'quick-dropzone intake-drop', tabindex: '0', id: 'dropzone', role: 'button', 'aria-label': 'Drop or paste photos here, or press Enter to choose files' },
+  el('span', { class: 'intake-icon', 'aria-hidden': 'true' }, icon('image-plus', 'icon-32'), el('span', { class: 'mark' }, icon('copy'))),
+  el('strong', {}, 'Drag or paste photos'),
+  el('span', { class: 'kbd-pill' }, icon('copy'), 'Ctrl + V'),
+  el('div', { class: 'row-actions' },
+    el('label', { class: 'btn btn-primary', for: 'files' }, icon('folder-input'), 'Choose files'),
+    canReadClipboard() ? button('Paste', { variant: 'btn-outline', iconName: 'copy', onclick: (event) => { event.stopPropagation(); pasteFromButton(); } }) : null),
+  el('small', {}, 'JPEG, PNG, WebP, or HEIC up to 200 MB each. Images are saved as soon as they arrive, one at a time.'),
   fileInput);
+dropzone.addEventListener('click', (event) => { if (!event.target.closest('button, label')) fileInput.click(); });
 dropzone.addEventListener('keydown', (event) => {
   if (event.key !== 'Enter' && event.key !== ' ') return;
   event.preventDefault();
@@ -174,31 +201,35 @@ async function loadReview() {
 try {
   await loadAlbums(preset);
   setChildren(main,
-    el('div', { class: 'page-head' }, el('div', {},
-      el('h1', {}, 'Quick upload'),
-      el('p', { class: 'text-meta' }, 'Paste or drop images and they are saved right away. Check the results on the right.'))),
-    el('div', { class: 'quick-split' },
-      el('section', { class: 'panel quick-pane', 'aria-labelledby': 'quick-title', id: 'registerPanel' },
-        el('div', { class: 'quick-pane-head' }, el('h2', { id: 'quick-title' }, icon('zap', 'icon-20'), 'Quick add')),
-        el('div', { class: 'field' },
-          el('label', { class: 'label', for: 'album' }, 'Album'),
-          el('div', { class: 'album-picker' }, albumSelect, button('New album', { variant: 'btn-outline', iconName: 'plus', onclick: async () => {
-            const created = await albumForm(null);
-            if (created) { await loadAlbums(created.id); albumSelect.dispatchEvent(new Event('change')); status.set('Album created.', 'done'); }
-          } })),
-          albumError),
+    el('div', { class: 'studio-head' }, el('div', {},
+      el('p', { class: 'eyebrow' }, 'Studio intake'),
+      el('h1', {}, 'Photo intake'),
+      el('p', { class: 'sub' }, 'Paste (Ctrl+V) or drop images and they are saved right away. Check the results below.'))),
+    el('div', { class: 'intake-grid' },
+      el('div', { class: 'quick-pane', id: 'registerPanel' },
         dropzone,
-        canReadClipboard() ? el('div', { class: 'row-actions' }, button('Paste from clipboard', { variant: 'btn-outline', iconName: 'copy', onclick: pasteFromButton })) : null,
-        status.node),
-      el('section', { class: 'panel quick-pane', 'aria-labelledby': 'review-title', id: 'reviewPanel' },
-        el('div', { class: 'quick-pane-head' }, el('h2', { id: 'review-title' }, icon('list-checks', 'icon-20'), 'Review', reviewCount)),
-        el('div', { class: 'quick-review-toolbar' },
-          el('p', { class: 'text-meta' }, `Shows the ${REVIEW_LIMIT} most recent uploads. Search by file name, album, or tag.`),
-          el('label', { class: 'visually-hidden', for: 'review-search' }, 'Search uploads'),
-          searchInput,
-          todayButton,
-          button('Refresh', { variant: 'btn-ghost', iconName: 'refresh-cw', onclick: loadReview })),
-        reviewGrid)));
+        status.node,
+        el('section', { class: 'panel quick-pane', 'aria-labelledby': 'review-title', id: 'reviewPanel' },
+          el('div', { class: 'quick-pane-head' }, el('h2', { id: 'review-title' }, icon('list-checks', 'icon-20'), 'Review', reviewCount)),
+          el('div', { class: 'quick-review-toolbar' },
+            el('p', { class: 'text-meta' }, `Shows the ${REVIEW_LIMIT} most recent uploads. Search by file name, album, or tag.`),
+            el('label', { class: 'visually-hidden', for: 'review-search' }, 'Search uploads'),
+            searchInput,
+            todayButton,
+            button('Refresh', { variant: 'btn-ghost', iconName: 'refresh-cw', onclick: loadReview })),
+          reviewGrid)),
+      el('aside', { class: 'intake-side' },
+        el('section', { class: 'panel', 'aria-labelledby': 'target-title' },
+          el('h2', { id: 'target-title', class: 'quick-pane-head' }, icon('user', 'icon-20'), ' Target'),
+          modelPicker,
+          el('div', { class: 'field' },
+            el('label', { class: 'label', for: 'album' }, 'Album'),
+            el('div', { class: 'album-picker' }, albumSelect, button('New album', { variant: 'btn-outline', iconName: 'plus', onclick: async () => {
+              const created = await albumForm(null, { modelId: pickedModel || undefined });
+              if (created) { await loadAlbums(created.id); albumSelect.dispatchEvent(new Event('change')); status.set('Album created.', 'done'); }
+            } })),
+            albumError),
+          el('a', { class: 'btn btn-outline btn-block', href: '/manage/photos.html' }, icon('images'), 'Open photo library')))));
   await loadReview();
 } catch (error) {
   main.replaceChildren(errorState(error, () => location.reload()));

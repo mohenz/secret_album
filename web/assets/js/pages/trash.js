@@ -5,7 +5,7 @@ import { boot } from '../shared/layout.js';
 import { button, confirmDialog, el, emptyState, errorState, formatDate, formatNumber, icon, loadingState, plural, toast, toastError, setChildren } from '../shared/ui.js';
 
 const main = document.getElementById('main');
-await boot({ ownerOnly: true });
+await boot({ ownerOnly: true, studio: true, active: 'trash' });
 main.className = 'manage-page';
 
 const KIND = { model: 'Model', album: 'Album', photo: 'Photo' };

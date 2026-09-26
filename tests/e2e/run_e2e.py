@@ -170,6 +170,7 @@ def run() -> int:
 
         # 4. 업로드
         page.goto(f"{BASE}/manage/upload.html?album={album_id}")
+        page.wait_for_selector("#reviewPanel")
         check("퀵 업로드 2단 화면(빠른 등록·등록 확인)", page.locator("#registerPanel").count() == 1 and page.locator("#reviewPanel").count() == 1)
         check("앨범 미리 선택", page.locator("#album").input_value() == album_id)
         page.set_input_files("#files", [str(f) for f in files])
@@ -331,13 +332,51 @@ def run() -> int:
         check("설정: 썸네일 가리기", page.evaluate("document.documentElement.dataset.blur") == "true")
         page.uncheck("#blur")
 
+        # 13-1. Studio: 사진 관리(카드·목록·필터·선택·일괄 작업)와 전체 보기
+        page.goto(f"{BASE}/manage/photos.html")
+        page.wait_for_selector(".lib-card")
+        cards = page.locator(".lib-card").count()
+        check("Studio 사진 관리: 카드 표시", cards >= 7, str(cards))
+        check("Studio 사이드바 현재 메뉴", page.locator(".studio-sidebar [aria-current=page]").inner_text().strip() == "Photo library")
+        page.locator(".model-tab:has-text('Seoyun Han')").click()
+        page.wait_for_selector(".filter-chip:has-text('Model: Seoyun Han')")
+        check("Studio 모델 탭 → 필터 칩", True)
+        page.fill("#lib-search", "zz-no-such-photo")
+        page.wait_for_selector("text=No photos match")
+        check("Studio 검색 결과 없음 안내", True)
+        page.click("button:has-text('Reset')")
+        page.wait_for_selector(".lib-card")
+        check("Studio 필터 초기화", page.locator(".filter-chip").count() == 0 and page.locator(".lib-card").count() == cards)
+        for box in page.locator(".lib-card .check input").all()[:2]:
+            box.check()
+        check("Studio 선택 → 일괄 작업 막대", "2 selected" in page.locator(".bulk-bar").inner_text())
+        page.click(".bulk-bar button:has-text('Tags')")
+        page.fill("#bulk-tags", "studio-e2e")
+        page.locator("dialog[open] button[type=submit]").click()
+        page.wait_for_selector("dialog[open]", state="detached")
+        page.click(".bulk-bar button[aria-label='Clear selection']")
+        check("Studio 선택 해제 → 막대 사라짐", page.locator(".bulk-bar").count() == 0)
+        page.fill("#lib-search", "studio-e2e")
+        page.wait_for_function("document.querySelectorAll('.lib-card').length === 2")
+        check("Studio 일괄 태그 → 태그로 검색", True)
+        page.click(".view-toggle button:has-text('List')")
+        page.wait_for_selector(".library-table tbody tr")
+        check("Studio 목록 보기", page.locator(".library-table tbody tr").count() == 2)
+        page.click(".view-toggle button:has-text('Cards')")
+        page.goto(f"{BASE}/manage/index.html")
+        page.wait_for_selector(".stat-grid")
+        stats = page.locator(".stat-card .value").all_inner_texts()
+        check("Studio 전체 보기: 통계 4개", len(stats) == 4, ", ".join(stats))
+        check("Studio 전체 보기: 최근 업로드", page.locator(".recent-strip a").count() > 0)
+
         # 14. 모바일(390px)
         mobile = browser.new_context(viewport={"width": 390, "height": 844}, locale="ko-KR", has_touch=True, is_mobile=True, bypass_csp=True, storage_state=context.storage_state())
         m = mobile.new_page()
         m.on("pageerror", lambda e: console_errors.append(str(e)))
         for path, name, ready in [("/", "홈(모바일)", ".hero img"), (album_url.replace(BASE, ""), "앨범(모바일)", ".flow-item"), ("/pages/albums.html", "앨범 목록(모바일)", ".cover-card"),
                                   ("/pages/models.html", "모델 목록(모바일)", ".model-card"), ("/manage/upload.html", "업로드(모바일)", ".quick-dropzone"),
-                                  ("/manage/trash.html", "휴지통(모바일)", ".trash-item"), ("/manage/settings.html", "설정(모바일)", "#s-security")]:
+                                  ("/manage/trash.html", "휴지통(모바일)", ".trash-item"),
+                                  ("/manage/photos.html", "사진 관리(모바일)", ".lib-card"), ("/manage/index.html", "전체 보기(모바일)", ".stat-grid"), ("/manage/settings.html", "설정(모바일)", "#s-security")]:
             m.goto(BASE + path)
             m.wait_for_selector(ready)
             m.wait_for_timeout(300)

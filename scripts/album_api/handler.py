@@ -624,6 +624,15 @@ def upload(request: Request):
     return 202, {"photo_id": photo["id"], "job_id": job_id, "status": "processing"}
 
 
+@route("GET", "/library", OWNER)
+def photo_library(request: Request):
+    with database.transaction() as cursor:
+        return repository.library(
+            cursor, request.session, request.arg("model_id"), request.arg("album_id"), request.arg("q", ""), request.arg("sort"),
+            limit=request.int_arg("limit", 120, 1, 500), offset=request.int_arg("offset", 0, 0, 1_000_000),
+        )
+
+
 @route("GET", "/uploads/recent", OWNER)
 def recent_uploads(request: Request):
     with database.transaction() as cursor:

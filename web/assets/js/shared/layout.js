@@ -1,7 +1,7 @@
 // 모든 앱 화면의 시작점: 세션 확인 → 헤더 → 프라이버시 기능 → 검색.
 import { api, ApiError, goLogin, mediaUrl } from './api.js';
 import { initPrivacy, lockNow, setShield } from './privacy.js';
-import { debounce, el, formatNumber, icon, iconButton, joinMeta, openMenu, showDialog, toastError } from './ui.js';
+import { debounce, el, formatBytes, formatNumber, icon, iconButton, joinMeta, openMenu, showDialog, toastError } from './ui.js';
 
 export let me = null;
 
@@ -66,6 +66,7 @@ function menuItems() {
     items.push('separator');
   }
   if (me?.user.role === 'owner') {
+    items.push({ label: 'Studio', icon: 'layout-grid', href: '/manage/index.html' });
     items.push({ label: 'Quick upload', icon: 'upload', href: '/manage/upload.html' });
     items.push({ label: 'Trash', icon: 'trash-2', href: '/manage/trash.html' });
     items.push({ label: 'Settings', icon: 'settings', href: '/manage/settings.html' });
@@ -143,7 +144,46 @@ function renderQuickResults(data) {
 }
 
 // ------------------------------------------------ 시작
-export async function boot({ active = '', overPhoto = false, ownerOnly = false, onSlideshow = null } = {}) {
+// ------------------------------------------------ Studio (관리 영역, 가이드 시안 _5~_8)
+const STUDIO_NAV = [
+  ['overview', '/manage/index.html', 'Archive overview', 'layout-grid'],
+  ['photos', '/manage/photos.html', 'Photo library', 'images'],
+  ['upload', '/manage/upload.html', 'Quick upload', 'upload'],
+  ['trash', '/manage/trash.html', 'Trash', 'trash-2'],
+  ['settings', '/manage/settings.html', 'Settings', 'settings'],
+];
+
+function renderStudio(active) {
+  document.body.classList.add('studio');
+  document.getElementById('site-header')?.remove();
+  const main = document.getElementById('main');
+  const current = STUDIO_NAV.find(([key]) => key === active);
+  const storage = el('p', { class: 'studio-storage', 'data-numeric': true }, 'Storage …');
+  const sidebar = el('aside', { class: 'studio-sidebar', id: 'studio-sidebar', 'aria-label': 'Studio' },
+    el('a', { class: 'studio-brand', href: '/manage/index.html' }, icon('lock', 'icon-20'), el('span', {}, 'Secret Album'), el('span', { class: 'studio-tag' }, 'STUDIO')),
+    el('nav', { class: 'studio-nav', 'aria-label': 'Studio menu' },
+      STUDIO_NAV.map(([key, href, label, iconName]) => el('a', { href, 'aria-current': key === active ? 'page' : undefined }, icon(iconName, 'icon-18'), el('span', {}, label)))),
+    el('div', { class: 'studio-foot' },
+      el('a', { class: 'studio-back', href: '/' }, icon('arrow-left'), el('span', {}, 'Back to exhibition'), el('span', { class: 'hint' }, 'View')),
+      storage));
+  const accountButton = el('button', { type: 'button', class: 'avatar-button', 'aria-label': `Account: ${me?.user.display_name || ''}`, 'aria-haspopup': 'menu', 'aria-expanded': 'false', onclick: () => openMenu(accountButton, accountItems()) },
+    el('span', { class: 'avatar', 'aria-hidden': 'true' }, (me?.user.display_name || '?').trim().charAt(0).toUpperCase()));
+  const menuToggle = iconButton('ellipsis-vertical', 'Open studio menu', () => document.body.classList.toggle('studio-open'));
+  menuToggle.classList.add('studio-menu-toggle');
+  const topbar = el('header', { class: 'studio-topbar' },
+    menuToggle,
+    el('nav', { class: 'breadcrumb', 'aria-label': 'Breadcrumb' }, el('a', { href: '/manage/index.html' }, 'Studio'), el('span', { 'aria-hidden': 'true' }, '/'), el('span', { 'aria-current': 'page' }, current ? current[2] : '')),
+    el('div', { class: 'studio-top-actions' },
+      el('span', { class: 'session-pill' }, el('span', { class: 'dot', 'aria-hidden': 'true' }), 'Secure session'),
+      iconButton('eye-off', 'Hide screen (Shift+H)', () => setShield(true)),
+      accountButton));
+  const shell = el('div', { class: 'studio-shell' }, sidebar, el('div', { class: 'studio-body' }, topbar, main));
+  document.body.insertBefore(shell, document.body.querySelector('script') || null);
+  document.body.addEventListener('click', (event) => { if (document.body.classList.contains('studio-open') && !event.target.closest('#studio-sidebar, .studio-menu-toggle')) document.body.classList.remove('studio-open'); });
+  api('/storage').then((s) => { storage.textContent = `Storage ${formatBytes(s.disk.used)} / ${formatBytes(s.disk.total)}`; }).catch(() => { storage.textContent = ''; });
+}
+
+export async function boot({ active = '', overPhoto = false, ownerOnly = false, onSlideshow = null, studio = false } = {}) {
   try {
     me = await api('/auth/me', { noRedirect: true });
   } catch (error) {
@@ -151,7 +191,7 @@ export async function boot({ active = '', overPhoto = false, ownerOnly = false, 
     throw error;
   }
   if (me.state !== 'active') { goLogin(me.state); return new Promise(() => {}); }
-  renderHeader(active, overPhoto, onSlideshow);
+  if (studio) renderStudio(active); else renderHeader(active, overPhoto, onSlideshow);
   initPrivacy({ idleMinutes: me.settings.session_idle_minutes || 15, blurThumbnails: !!me.settings.blur_thumbnails });
   if (ownerOnly && me.user.role !== 'owner') {
     document.getElementById('main').replaceChildren(el('div', { class: 'empty' }, icon('lock', 'icon-32'), el('p', { class: 'text-card' }, 'Only the owner can view this page.')));

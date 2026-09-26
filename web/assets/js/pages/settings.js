@@ -5,7 +5,7 @@ import { setBlurThumbnails } from '../shared/privacy.js';
 import { button, el, errorState, formatBytes, formatDateTime, formatNumber, icon, loadingState, plural, setBusy, toast, toastError } from '../shared/ui.js';
 
 const main = document.getElementById('main');
-const me = await boot({ ownerOnly: true });
+const me = await boot({ ownerOnly: true, studio: true, active: 'settings' });
 main.className = 'manage-page';
 main.replaceChildren(loadingState());
 
