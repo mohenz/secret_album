@@ -24,6 +24,15 @@ if (-not (Test-Path -LiteralPath $envFile)) {
 }
 $settings = @{}
 Get-Content -LiteralPath $envFile | ForEach-Object { if ($_ -match '^([^#=]+)=(.*)$') { $settings[$matches[1]]=$matches[2] } }
+if (-not $settings.ALBUM_DATA_KEY) {
+    # 2단계 인증 비밀값 암호화 키 (Fernet 형식: URL-safe Base64 32바이트). 분실하면 2단계 인증을 다시 등록해야 한다.
+    $keyBytes = New-Object byte[] 32
+    $keyRng = [Security.Cryptography.RandomNumberGenerator]::Create()
+    try { $keyRng.GetBytes($keyBytes) } finally { $keyRng.Dispose() }
+    $dataKey = [Convert]::ToBase64String($keyBytes).Replace('+','-').Replace('/','_')
+    Add-Content -LiteralPath $envFile -Value "ALBUM_DATA_KEY=$dataKey" -Encoding utf8
+    $settings.ALBUM_DATA_KEY = $dataKey
+}
 $env:PGPASSWORD = $settings.PGPASSWORD
 
 if (-not (Test-Path -LiteralPath (Join-Path $dataRoot 'PG_VERSION'))) {
@@ -53,5 +62,20 @@ if (($exists | Out-String).Trim() -ne '1') {
 }
 & (Join-Path $pgBin 'psql.exe') -v ON_ERROR_STOP=1 -h 127.0.0.1 -p $pgPort -U $dbUser -d $dbName -f $schemaFile
 if ($LASTEXITCODE -ne 0) { throw '스키마 적용 실패' }
+
+# local/migrations/NNN_*.sql을 이름순으로 한 번씩 적용하고 schema_migrations에 기록한다.
+$psql = Join-Path $pgBin 'psql.exe'
+& $psql -v ON_ERROR_STOP=1 -q -h 127.0.0.1 -p $pgPort -U $dbUser -d $dbName -c "CREATE TABLE IF NOT EXISTS schema_migrations (name text PRIMARY KEY, applied_at timestamptz NOT NULL DEFAULT now())"
+if ($LASTEXITCODE -ne 0) { throw '마이그레이션 기록 테이블 생성 실패' }
+$applied = @(& $psql -h 127.0.0.1 -p $pgPort -U $dbUser -d $dbName -tAc 'SELECT name FROM schema_migrations')
+$migrationDir = Join-Path $localRoot 'migrations'
+foreach ($file in (Get-ChildItem -LiteralPath $migrationDir -Filter '*.sql' -ErrorAction SilentlyContinue | Sort-Object Name)) {
+    if ($applied -contains $file.Name) { continue }
+    & $psql -v ON_ERROR_STOP=1 -q -1 -h 127.0.0.1 -p $pgPort -U $dbUser -d $dbName -f $file.FullName
+    if ($LASTEXITCODE -ne 0) { throw "마이그레이션 적용 실패: $($file.Name)" }
+    & $psql -v ON_ERROR_STOP=1 -q -h 127.0.0.1 -p $pgPort -U $dbUser -d $dbName -c "INSERT INTO schema_migrations(name) VALUES ('$($file.Name)')"
+    if ($LASTEXITCODE -ne 0) { throw "마이그레이션 기록 실패: $($file.Name)" }
+    Write-Output "MIGRATION_APPLIED $($file.Name)"
+}
 Remove-Item Env:PGPASSWORD -ErrorAction SilentlyContinue
 Write-Output "DATABASE_READY host=127.0.0.1 port=$pgPort database=$dbName user=$dbUser"

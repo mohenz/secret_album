@@ -1,5 +1,7 @@
+import logging
 from http.server import ThreadingHTTPServer
 
+from album_api import database, logs
 from album_api.config import Settings
 from album_api.handler import AlbumRequestHandler
 
@@ -7,9 +9,12 @@ Handler = AlbumRequestHandler
 
 
 def main() -> None:
+    logs.setup("api")
     settings = Settings.from_environment()
+    database.configure(settings.db_pool_size)
     server = ThreadingHTTPServer((settings.api_host, settings.api_port), Handler)
-    print(f"비밀앨범 API: http://{settings.api_host}:{settings.api_port}", flush=True)
+    server.daemon_threads = True
+    logging.getLogger("album.api").info("비밀앨범 API: http://%s:%s", settings.api_host, settings.api_port)
     try:
         server.serve_forever()
     except KeyboardInterrupt:
@@ -20,4 +25,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

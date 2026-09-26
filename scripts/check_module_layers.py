@@ -5,6 +5,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent / "album_api"
 LAYERS = {
     "config": 0,
+    "logs": 0,
     "tables": 0,
     "database": 1,
     "queries": 2,
