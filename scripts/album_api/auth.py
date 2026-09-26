@@ -1,10 +1,8 @@
-"""로그인·2단계 인증·세션.
+"""로그인·세션.
 
 세션 상태
 - active: 사용 가능
 - locked: 유휴 시간 초과 또는 직접 잠금. 비밀번호만 다시 입력하면 풀린다.
-- mfa_required: 비밀번호는 맞았고 2단계 인증 코드가 필요하다.
-- totp_setup_required: 소유자가 아직 2단계 인증을 등록하지 않았다.
 """
 
 import hashlib
@@ -19,10 +17,8 @@ from .config import (
     LOGIN_MAX_FAILURES,
     LOGIN_RATE_PER_MINUTE,
     MIN_PASSWORD_LENGTH,
-    RECOVERY_CODE_COUNT,
 )
 
-ISSUER = "Secret Album"
 _DUMMY_HASH: str | None = None
 
 
@@ -68,57 +64,8 @@ def validate_new_password(password: str, login_id: str) -> None:
         raise AuthError(400, "weak_password", "Password cannot contain your username. Please choose a different password.")
 
 
-def _fernet(data_key: str):
-    from cryptography.fernet import Fernet
-
-    if not data_key:
-        raise AuthError(500, "data_key_missing", "The server encryption key (ALBUM_DATA_KEY) is missing. Check local/album.env.")
-    return Fernet(data_key.encode("ascii"))
-
-
-def encrypt_secret(data_key: str, value: str) -> str:
-    return _fernet(data_key).encrypt(value.encode("utf-8")).decode("ascii")
-
-
-def decrypt_secret(data_key: str, value: str) -> str:
-    return _fernet(data_key).decrypt(value.encode("ascii")).decode("utf-8")
-
-
 def token_hash(token: str) -> str:
     return hashlib.sha256(token.encode("utf-8")).hexdigest()
-
-
-def new_totp_secret() -> str:
-    import pyotp
-
-    return pyotp.random_base32()
-
-
-def totp_uri(secret: str, login_id: str) -> str:
-    import pyotp
-
-    return pyotp.TOTP(secret).provisioning_uri(name=login_id, issuer_name=ISSUER)
-
-
-def verify_totp(secret: str, code: str) -> bool:
-    import pyotp
-
-    code = "".join(ch for ch in code if ch.isdigit())
-    if len(code) != 6:
-        return False
-    return pyotp.TOTP(secret).verify(code, valid_window=1)
-
-
-def new_recovery_codes() -> tuple[list[str], list[dict]]:
-    alphabet = "abcdefghjkmnpqrstuvwxyz23456789"
-    codes = ["-".join("".join(secrets.choice(alphabet) for _ in range(4)) for _ in range(2)) for _ in range(RECOVERY_CODE_COUNT)]
-    stored = [{"hash": token_hash(code), "used_at": None} for code in codes]
-    return codes, stored
-
-
-def _normalize_recovery(code: str) -> str:
-    compact = "".join(ch for ch in code.lower() if ch.isalnum())
-    return f"{compact[:4]}-{compact[4:]}" if len(compact) == 8 else code.strip().lower()
 
 
 class RateLimiter:
@@ -148,7 +95,6 @@ class SessionInfo:
     display_name: str
     role: str
     state: str
-    totp_enabled: bool
 
     @property
     def is_owner(self) -> bool:
@@ -189,7 +135,7 @@ def login(cursor, login_id: str, password: str, ip: str | None, user_agent: str 
     """비밀번호 확인 후 새 세션을 만든다. (쿠키 토큰, 세션 상태)를 돌려준다."""
     generic = AuthError(401, "invalid_credentials", "Incorrect username or password. Please try again.")
     cursor.execute(
-        "SELECT id, login_id, password_hash, role, totp_enabled, failed_login_count, locked_until, disabled_at "
+        "SELECT id, login_id, password_hash, role, failed_login_count, locked_until, disabled_at "
         "FROM users WHERE lower(login_id) = lower(%s) FOR UPDATE",
         ((login_id or "").strip(),),
     )
@@ -216,24 +162,21 @@ def login(cursor, login_id: str, password: str, ip: str | None, user_agent: str 
     if _hasher().check_needs_rehash(user["password_hash"]):
         cursor.execute("UPDATE users SET password_hash = %s WHERE id = %s", (hash_password(password), user["id"]))
 
-    mfa_verified = not user["totp_enabled"] and user["role"] != "owner"
     token = secrets.token_urlsafe(32)
     cursor.execute(
-        "INSERT INTO sessions(id, user_id, expires_at, user_agent, ip, mfa_verified) VALUES (%s, %s, %s, %s, %s, %s)",
-        (token_hash(token), user["id"], _now() + timedelta(days=max_days), (user_agent or "")[:300], ip, mfa_verified),
+        "INSERT INTO sessions(id, user_id, expires_at, user_agent, ip) VALUES (%s, %s, %s, %s, %s)",
+        (token_hash(token), user["id"], _now() + timedelta(days=max_days), (user_agent or "")[:300], ip),
     )
-    _audit(cursor, user["id"], "auth.login_password_ok", ip)
-    if mfa_verified:
-        return token, "active"
-    return token, "mfa_required" if user["totp_enabled"] else "totp_setup_required"
+    _audit(cursor, user["id"], "auth.login", ip)
+    return token, "active"
 
 
 def load_session(cursor, token: str | None, idle_minutes: int) -> SessionInfo | None:
     if not token:
         return None
     cursor.execute(
-        "SELECT s.id, s.last_seen_at, s.expires_at, s.revoked_at, s.mfa_verified, s.locked_at, "
-        "u.id AS user_id, u.login_id, u.display_name, u.role, u.totp_enabled, u.disabled_at "
+        "SELECT s.id, s.last_seen_at, s.expires_at, s.revoked_at, s.locked_at, "
+        "u.id AS user_id, u.login_id, u.display_name, u.role, u.disabled_at "
         "FROM sessions s JOIN users u ON u.id = s.user_id WHERE s.id = %s",
         (token_hash(token),),
     )
@@ -241,9 +184,7 @@ def load_session(cursor, token: str | None, idle_minutes: int) -> SessionInfo | 
     now = _now()
     if row is None or row["revoked_at"] is not None or row["expires_at"] <= now or row["disabled_at"] is not None:
         return None
-    if not row["mfa_verified"]:
-        state = "mfa_required" if row["totp_enabled"] else "totp_setup_required"
-    elif row["locked_at"] is not None or now - row["last_seen_at"] > timedelta(minutes=idle_minutes):
+    if row["locked_at"] is not None or now - row["last_seen_at"] > timedelta(minutes=idle_minutes):
         state = "locked"
     else:
         state = "active"
@@ -256,74 +197,7 @@ def load_session(cursor, token: str | None, idle_minutes: int) -> SessionInfo | 
         display_name=row["display_name"],
         role=row["role"],
         state=state,
-        totp_enabled=row["totp_enabled"],
     )
-
-
-def verify_second_factor(cursor, session: SessionInfo, code: str, data_key: str, ip: str | None) -> None:
-    cursor.execute("SELECT totp_secret, recovery_codes FROM users WHERE id = %s FOR UPDATE", (session.user_id,))
-    user = cursor.fetchone()
-    ok = False
-    if user["totp_secret"] and verify_totp(decrypt_secret(data_key, user["totp_secret"]), code):
-        ok = True
-    else:
-        from psycopg.types.json import Jsonb
-
-        wanted = token_hash(_normalize_recovery(code))
-        codes = list(user["recovery_codes"] or [])
-        for item in codes:
-            if item.get("used_at") is None and secrets.compare_digest(item.get("hash", ""), wanted):
-                item["used_at"] = _now().isoformat()
-                ok = True
-                cursor.execute("UPDATE users SET recovery_codes = %s WHERE id = %s", (Jsonb(codes), session.user_id))
-                _audit(cursor, session.user_id, "auth.recovery_code_used", ip)
-                break
-    if not ok:
-        _audit(cursor, session.user_id, "auth.mfa_failed", ip)
-        raise AuthError(401, "invalid_code", "Incorrect code. Enter the 6-digit code from your authenticator app or a recovery code.")
-    cursor.execute("UPDATE sessions SET mfa_verified = true, last_seen_at = now(), locked_at = NULL WHERE id = %s", (session.session_id,))
-    _audit(cursor, session.user_id, "auth.login", ip)
-
-
-def begin_totp_setup(cursor, session: SessionInfo, data_key: str) -> dict:
-    secret = new_totp_secret()
-    cursor.execute(
-        "UPDATE users SET totp_secret = %s, updated_at = now() WHERE id = %s AND totp_enabled = false",
-        (encrypt_secret(data_key, secret), session.user_id),
-    )
-    if cursor.rowcount == 0:
-        raise AuthError(409, "totp_already_enabled", "Two-step verification is already set up.")
-    return {"secret": secret, "uri": totp_uri(secret, session.login_id)}
-
-
-def enable_totp(cursor, session: SessionInfo, code: str, data_key: str, ip: str | None) -> list[str]:
-    from psycopg.types.json import Jsonb
-
-    cursor.execute("SELECT totp_secret, totp_enabled FROM users WHERE id = %s FOR UPDATE", (session.user_id,))
-    user = cursor.fetchone()
-    if user["totp_enabled"]:
-        raise AuthError(409, "totp_already_enabled", "Two-step verification is already set up.")
-    if not user["totp_secret"]:
-        raise AuthError(400, "totp_not_started", "Setup key not found. Please restart two-step verification setup.")
-    if not verify_totp(decrypt_secret(data_key, user["totp_secret"]), code):
-        raise AuthError(401, "invalid_code", "Incorrect code. Enter the 6-digit code shown in your authenticator app.")
-    codes, stored = new_recovery_codes()
-    cursor.execute(
-        "UPDATE users SET totp_enabled = true, recovery_codes = %s, updated_at = now() WHERE id = %s",
-        (Jsonb(stored), session.user_id),
-    )
-    cursor.execute("UPDATE sessions SET mfa_verified = true, last_seen_at = now() WHERE id = %s", (session.session_id,))
-    _audit(cursor, session.user_id, "auth.totp_enabled", ip)
-    return codes
-
-
-def regenerate_recovery_codes(cursor, session: SessionInfo, ip: str | None) -> list[str]:
-    from psycopg.types.json import Jsonb
-
-    codes, stored = new_recovery_codes()
-    cursor.execute("UPDATE users SET recovery_codes = %s, updated_at = now() WHERE id = %s", (Jsonb(stored), session.user_id))
-    _audit(cursor, session.user_id, "auth.recovery_codes_regenerated", ip)
-    return codes
 
 
 def unlock(cursor, session: SessionInfo, password: str, ip: str | None) -> None:

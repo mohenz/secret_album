@@ -23,7 +23,7 @@
 
 | 포함 | 제외(후속 검토) |
 |---|---|
-| 로그인, 2단계 인증, 자동 잠금 | 인터넷 공개, 외부 공유 링크 |
+| 로그인, 자동 잠금 (2단계 인증은 D4 결정으로 제외) | 인터넷 공개, 외부 공유 링크 |
 | 모델·앨범·사진·태그 관리, 즐겨찾기 | 동영상 |
 | 대량 업로드, 썸네일·표시용 이미지 자동 생성, EXIF 추출 | 얼굴 인식, AI 자동 태그 |
 | 갤러리 감상 화면, 사진 뷰어, 슬라이드쇼, 검색 | 모바일 앱 |
@@ -88,7 +88,6 @@ Docker·Node 빌드 도구는 쓰지 않는다. 서버에는 PostgreSQL과 Pytho
 | DB 드라이버 | `psycopg[binary]` 3.x + 자체 연결 풀 | cinetube `database.py` 구조 재사용 |
 | 이미지 처리 | Pillow (WebP 생성, EXIF, 방향 보정) + `pillow-heif`(HEIC 지원 시) | cinetube는 Pillow로 썸네일 생성 |
 | 비밀번호 | `argon2-cffi` (argon2id) | 신규(cinetube는 로그인 없음) |
-| 2단계 인증 | `pyotp` (TOTP) | 신규 |
 | 테스트 | `unittest` (백엔드), `check_module_layers.py` (계층 검사), Playwright(화면 흐름, 개발 PC에서만) | cinetube와 같음 + 화면 흐름 |
 
 `requirements.txt`:
@@ -97,7 +96,6 @@ Docker·Node 빌드 도구는 쓰지 않는다. 서버에는 PostgreSQL과 Pytho
 psycopg[binary]==3.3.4
 Pillow==12.1.1
 argon2-cffi
-pyotp
 pillow-heif        # D5에서 HEIC 지원을 결정한 경우만
 ```
 
@@ -111,7 +109,7 @@ secret_album/
 ├─ docs/                    design_request.md, system_design.md, 운영 문서
 ├─ web/                     ★ 정적 웹서버 루트 (이 폴더 밖은 웹으로 열리지 않음)
 │  ├─ index.html            홈
-│  ├─ login.html            로그인 · 2단계 인증 · 잠금 해제
+│  ├─ login.html            로그인 · 잠금 해제
 │  ├─ pages/
 │  │  ├─ albums.html        앨범 목록
 │  │  ├─ album.html         앨범 (?id=)
@@ -151,7 +149,7 @@ secret_album/
 │     ├─ database.py        연결 풀, run_sql
 │     ├─ queries.py         필터·검색·정렬·페이지네이션
 │     ├─ repository.py      모델·앨범·사진·태그·즐겨찾기·휴지통 CRUD
-│     ├─ auth.py            비밀번호, TOTP, 세션 발급·검증·만료, 로그인 실패 제한
+│     ├─ auth.py            비밀번호, 세션 발급·검증·만료, 로그인 실패 제한
 │     ├─ media.py           안전 경로, 업로드 저장, 파생 이미지 생성, EXIF, 사진 전달
 │     ├─ jobs.py            background_jobs 큐 + 작업 핸들러 등록
 │     └─ handler.py         라우팅, 인증 검사, CORS, JSON 응답, 처리시간 로그
@@ -207,11 +205,11 @@ cinetube는 로그인 없는 로컬 서비스이고 `local/media`를 정적 웹�
 |---|---|
 | 계정 | 최초 소유자는 서버에서 `.\.venv\Scripts\python.exe scripts\admin_create.py`로 1회 생성. 웹 가입 화면 없음 |
 | 비밀번호 | argon2id, 최소 10자 |
-| 2단계 인증 | TOTP 6자리. 복구 코드 10개(해시 저장). 필수 여부는 결정 D4 |
+| 2단계 인증 | 쓰지 않음 (D4, 2026-09-26 사용자 결정: 개인용 사이트) |
 | 로그인 실패 | 계정별 5회 실패 → 10분 잠금, IP별 분당 요청 제한. 오류 문구는 아이디 존재 여부를 드러내지 않음 |
 | 세션 | 256bit 무작위 토큰 쿠키 `album_session`(`HttpOnly; SameSite=Strict; Path=/`, HTTPS 적용 시 `Secure`). DB에는 SHA-256 해시만 저장 |
 | 수명 | 절대 만료 14일, 서버 측 유휴 만료 = 자동 잠금 설정값(기본 15분) |
-| 잠금 해제 | 비밀번호만 재입력. 2단계 인증은 새 세션 생성 시에만 |
+| 잠금 해제 | 비밀번호 재입력 |
 | 권한 | `owner`: 전체 / `viewer`: `album_shares`에 있는 앨범 조회·즐겨찾기만 |
 
 화면(8090)과 API(3051)는 **같은 호스트, 다른 포트**다. 브라우저 기준 같은 사이트이므로 `SameSite=Strict` 쿠키가 API 호출(`fetch(..., {credentials: "include"})`)과 `<img src="http://<호스트>:3051/media/...">` 요청 모두에 실린다.
@@ -266,7 +264,6 @@ Content-Disposition: inline  (원본 다운로드 시 attachment + 원본 파일
 
 ```text
 users          id(uuid), login_id(unique), display_name, password_hash, role('owner'|'viewer'),
-               totp_secret, totp_enabled, recovery_codes(jsonb, 해시),
                failed_login_count, locked_until, disabled_at, created_at, updated_at
 sessions       id(토큰 SHA-256), user_id, created_at, last_seen_at, expires_at,
                user_agent, ip, revoked_at
@@ -350,7 +347,7 @@ cinetube와 같이 JSON 응답, 오류는 `{ "error": { "code", "message" } }`. 
 |---|---|---|
 | `GET /health` | 프로세스 상태 | 없음 |
 | `GET /ready` | DB 연결·저장소 쓰기 가능 여부 | 없음(상세 정보 미포함) |
-| `POST /auth/login` · `/auth/otp` · `/auth/unlock` · `/auth/logout` | 로그인, 2단계 인증, 잠금 해제, 로그아웃 | 없음 / 세션 |
+| `POST /auth/login` · `/auth/unlock` · `/auth/lock` · `/auth/logout` | 로그인, 잠금 해제, 잠금, 로그아웃 | 없음 / 세션 |
 | `GET /auth/me` | 현재 사용자·권한 | 세션 |
 | `GET /home` | 히어로·최근 앨범·모델 (홈 한 번에) | 세션 |
 | `GET·POST /models`, `GET·PATCH·DELETE /models/<id>` | 모델 | 조회 세션, 변경 owner |
@@ -419,7 +416,7 @@ py -3.14 -m venv .venv                               # 최초 1회: Python 3.14 
 
 | 테스트 | 범위 |
 |---|---|
-| `test_auth.py` | 비밀번호 해시, TOTP, 세션 만료·유휴 만료, 로그인 실패 잠금 |
+| `test_auth_live.py` | 비밀번호 로그인, 세션 만료·유휴 잠금, 로그인 실패 잠금, Origin·쿠키 |
 | `test_media.py` | 안전 경로, 매직 넘버 검사, 파생 이미지 크기·EXIF 제거·방향 보정, 보상 처리 |
 | `test_handler_api.py` | 무세션 401, 열람자 권한 404, CORS 허용 출처, Origin 검사, 오류 형식 |
 | `test_queries.py` | 검색·정렬·페이지네이션 SQL 조립 |
@@ -475,7 +472,7 @@ Git push 성공과 서버 배포 성공은 따로 확인한다(cinetube 문서�
 - `register_api_supervisor.ps1`로 `SecretAlbum-Supervisor` 예약 작업 등록(부팅 시 + 1분마다 자기 복구). cinetube 감시 스크립트와 같은 이유(배포 훅·에이전트 셸에서 띄운 프로세스가 호출자 종료 시 함께 종료되는 문제)로, 배포 훅은 프로세스를 죽이기만 하고 재기동은 감시 작업이 맡는다.
 - cinetube는 API만 감시하지만, 비밀앨범은 업로드 처리가 Worker에 의존하므로 **API와 Worker를 모두 감시**한다. 정적 웹서버와 PostgreSQL도 같은 작업에서 살아 있는지 확인한다.
 - 로그: `local/api.*.log`, `worker.*.log`, `web.*.log`, `postgres.log`, `supervisor.log`, `deploy.log`. 일 단위 순환, 14일 보관.
-- 감사 로그(`audit_logs`): 로그인 성공·실패, 2단계 인증 변경, 영구 삭제, 원본 다운로드, 설정 변경.
+- 감사 로그(`audit_logs`): 로그인 성공·실패, 비밀번호 변경, 영구 삭제, 원본 다운로드, 설정 변경.
 - 디스크 여유 10% 미만이면 설정 화면과 로그에 경고.
 
 ## 13. 보안 점검 목록
@@ -497,7 +494,7 @@ Git push 성공과 서버 배포 성공은 따로 확인한다(cinetube 문서�
 | 단계 | 내용 | 완료 기준 |
 |---|---|---|
 | 0. 기반 | 폴더 구조, `start/stop` 스크립트, 전용 DB 초기화, `album_api` 골격(config·database·handler), Worker 골격, `/health`·`/ready`, 계층 검사 | `.\sa`로 DB·API·Worker·웹 기동, ready 200 |
-| 1. 인증 | `admin_create.py`, 로그인·2단계 인증·세션·잠금 해제, CORS·Origin 검사, 로그인 화면 | 무세션 401·실패 잠금 테스트 통과 |
+| 1. 인증 | `admin_create.py`, 로그인·세션·잠금 해제, CORS·Origin 검사, 로그인 화면 | 무세션 401·실패 잠금 테스트 통과 |
 | 2. 업로드·처리 | `PUT /uploads`, `photo.process`, 중복 검사, 업로드 화면, `/media` 전달 | 사진 100장 업로드 후 전부 ready, 무세션 `/media` 401 |
 | 3. 감상 화면 | Bloom 토큰·글꼴·아이콘, 홈·앨범 목록·앨범·모델·뷰어·슬라이드쇼 | 디자인 요청서 14장 검토 기준 통과 |
 | 4. 관리 | 편집 모드 일괄 작업, 등록 폼, 휴지통, 설정, 검색·즐겨찾기 | Playwright 관리 흐름 통과 |
@@ -510,7 +507,7 @@ Git push 성공과 서버 배포 성공은 따로 확인한다(cinetube 문서�
 |---|---|---|
 | X1 | 정적 웹서버 루트를 `web/`으로 한정 | cinetube 방식(프로젝트 루트 공개)이면 사진·백업·로그가 웹으로 노출됨 |
 | X2 | 사진을 API `/media`로만 전달 | 로그인 없이 사진 접근 차단 |
-| X3 | 로그인·2단계 인증·세션·자동 잠금 추가 | 비공개 앨범 요구사항 (cinetube는 로그인 해제 상태) |
+| X3 | 로그인·세션·자동 잠금 추가 | 비공개 앨범 요구사항 (cinetube는 로그인 해제 상태) |
 | X4 | CORS `*` → 허용 출처 + 쿠키, Origin 검사 | 쿠키 인증과 CSRF 방지 |
 | X5 | 업로드를 data URL JSON 대신 파일 바이너리 전송 | 원본 사진 크기·개수 |
 | X6 | `media_assets` 경로 저장 대신 `photo_id`로 경로 계산 | 경로 조작 차단, 저장소 이동 용이 |
@@ -528,7 +525,7 @@ Git push 성공과 서버 배포 성공은 따로 확인한다(cinetube 문서�
 | D1 | 운영 서버 | cinetube와 같은 `192.168.0.2`, 경로 `E:\workspace\secret_album`. 사진 디스크 용량(원본 600GB 가정) 확인 필요 |
 | D2 | **Bloom 표준의 Radix UI 기반 예외** | Bloom은 Radix(React) 기반을 요구하지만 cinetube 구성은 Vanilla JS라 Radix를 쓸 수 없다. 네이티브 `<dialog>`·`popover`와 공통 `ui.js`로 대체하고, 포커스 가두기·복귀·`Esc` 닫기·`aria-*`를 직접 보장하는 예외로 기록할 것을 제안. 토큰·글꼴·아이콘·간격·문구·접근성 규칙은 그대로 준수 |
 | D3 | HTTPS | 1차는 cinetube와 같이 HTTP. 내부망이라도 무선 구간에서 비밀번호·사진이 평문으로 오가므로, 6단계에서 HTTPS(내부 인증서) 적용을 권장 |
-| D4 | 2단계 인증 필수 여부 | 소유자 필수 권장 |
+| D4 | 2단계 인증 필수 여부 | **결정: 쓰지 않음** (2026-09-26, 개인용 사이트) |
 | D5 | HEIC(아이폰 사진) 지원 | `pillow-heif` 추가로 가능. 지원 권장 |
 | D6 | 열람자 기능 | 데이터 모델만 반영, 화면은 2차 |
 | D7 | 디스크 암호화 | 서버 사진 디스크·백업 디스크 BitLocker 권장 |

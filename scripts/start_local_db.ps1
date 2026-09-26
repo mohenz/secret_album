@@ -25,15 +25,6 @@ if (-not (Test-Path -LiteralPath $envFile)) {
 $previousPassword = $env:PGPASSWORD
 $settings = @{}
 Get-Content -LiteralPath $envFile | ForEach-Object { if ($_ -match '^([^#=]+)=(.*)$') { $settings[$matches[1]]=$matches[2] } }
-if (-not $settings.ALBUM_DATA_KEY) {
-    # 2단계 인증 비밀값 암호화 키 (Fernet 형식: URL-safe Base64 32바이트). 분실하면 2단계 인증을 다시 등록해야 한다.
-    $keyBytes = New-Object byte[] 32
-    $keyRng = [Security.Cryptography.RandomNumberGenerator]::Create()
-    try { $keyRng.GetBytes($keyBytes) } finally { $keyRng.Dispose() }
-    $dataKey = [Convert]::ToBase64String($keyBytes).Replace('+','-').Replace('/','_')
-    Add-Content -LiteralPath $envFile -Value "ALBUM_DATA_KEY=$dataKey" -Encoding utf8
-    $settings.ALBUM_DATA_KEY = $dataKey
-}
 $env:PGPASSWORD = $settings.PGPASSWORD
 
 if (-not (Test-Path -LiteralPath (Join-Path $dataRoot 'PG_VERSION'))) {

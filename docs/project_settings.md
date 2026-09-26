@@ -78,13 +78,13 @@
 | 사진 뷰어 | PhotoSwipe 5 (로컬 복사본) |
 | 사진 격자 | 저스티파이드 레이아웃 직접 구현 |
 | Python | **3.14** 고정, 프로젝트 전용 가상환경 `.venv`(`py -3.14 -m venv .venv`). `sa.cmd`가 `.venv` Python으로 실행하고 3.14가 아니면 중단 |
-| Python 패키지 | `psycopg[binary]` 3.3.4, `Pillow` 12.1.1, `argon2-cffi`, `pyotp`, (HEIC 지원 시) `pillow-heif` |
+| Python 패키지 | `psycopg[binary]` 3.3.4, `Pillow` 12.1.1, `argon2-cffi`, `pillow-heif` (개발용 `playwright`는 `requirements-dev.txt`) |
 | Python 런타임 | Python 3.14.x, 프로젝트 `.venv` 필수 |
 | 테스트 | `unittest`, `check_module_layers.py`, Playwright(개발 PC) |
 
 ### 5.1 cinetube와 다르게 가져가는 점
 
-정적 웹 루트를 `web/`으로 한정, 사진은 API `/media`로만 전달, 로그인·2단계 인증·세션·자동 잠금 추가, CORS 허용 출처 제한, 업로드는 파일 바이너리 전송, 업로드 처리 기본 비동기, 감시 작업이 API·Worker 모두 관리, 배포 훅에 마이그레이션 포함, GitHub 원격 없음. (시스템 설계서 15장 X1~X12)
+정적 웹 루트를 `web/`으로 한정, 사진은 API `/media`로만 전달, 로그인·세션·자동 잠금 추가, CORS 허용 출처 제한, 업로드는 파일 바이너리 전송, 업로드 처리 기본 비동기, 감시 작업이 API·Worker 모두 관리, 배포 훅에 마이그레이션 포함, GitHub 원격 없음. (시스템 설계서 15장 X1~X12)
 
 ## 6. 포트와 주소
 
@@ -123,8 +123,8 @@ ALBUM_SLOW_REQUEST_MS=1000
 # 검증
 .\.venv\Scripts\python.exe -m compileall -q scripts tests
 .\.venv\Scripts\python.exe scripts\check_module_layers.py
-.\.venv\Scripts\python.exe -m unittest discover -s tests -t .      # 26개
-.\.venv\Scripts\python.exe tests\e2e\run_e2e.py                       # 화면 E2E 49개 (requirements-dev.txt)
+.\.venv\Scripts\python.exe -m unittest discover -s tests -t .      # 25개
+.\.venv\Scripts\python.exe tests\e2e\run_e2e.py                       # 화면 E2E 56개 (requirements-dev.txt)
 
 # 배포 (Gitea main push → 서버 post-receive 훅 → deploy\deploy.ps1)
 git push gitea main
@@ -146,7 +146,7 @@ git push gitea main
 | D1 | 운영 서버·사진 디스크 용량 | `192.168.0.2`, 원본 600GB 가정 |
 | D2 | Radix UI 기반 예외 | 네이티브 `<dialog>`·`popover`로 대체 |
 | D3 | HTTPS | 1차 HTTP, 운영 단계에서 HTTPS 권장 |
-| D4 | 2단계 인증 필수 | 소유자 필수 |
+| D4 | 2단계 인증 | **쓰지 않음** (2026-09-26 사용자 결정: 개인용 사이트). 비밀번호·로그인 실패 잠금·자동 잠금만 사용 |
 | D5 | HEIC 지원 | 지원 (`pillow-heif`) |
 | D6 | 열람자 기능 | 데이터 모델만, 화면은 2차 |
 | D7 | 디스크 암호화 | BitLocker |
@@ -169,6 +169,7 @@ git push gitea main
 | 2026-09-26 | Python 3.14 기준 통일(두 PC 작업 병합), DB 시작·Worker 종료 스크립트 결함 수정 |
 | 2026-09-26 | 1~6단계 구현: 인증·2단계 인증, 업로드·처리, 감상 화면·뷰어, 편집·휴지통·설정, 프라이버시 기능, 감시·백업·복원·배포·방화벽 스크립트. 통합 테스트 26개·E2E 49개 통과 |
 | 2026-09-26 | 사용자 지시로 사이트 UI 문구 전체를 영어로 전환 (표준 예외 E7) |
+| 2026-09-26 | 개발용 소유자 계정 `owner` 생성. 사용자 결정으로 2단계 인증 제거(D4) — 관련 API·화면·DB 열(마이그레이션 003)·패키지(`pyotp`, `cryptography`) 삭제 |
 
 ## 11. 다음 작업
 

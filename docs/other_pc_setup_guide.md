@@ -212,9 +212,9 @@ Invoke-RestMethod http://127.0.0.1:3051/ready
 .\.venv\Scripts\python.exe -m unittest discover -s tests -t .
 ```
 
-현재 기준으로 테스트 26개가 통과해야 한다(`tests/test_runtime.py`는 Python 3.14가 아니면 실패한다). DB가 켜져 있으면 통합 테스트(`test_auth_live.py`, `test_gallery_live.py`)가 `secret_album_test` DB를 새로 만들어 실행하고, DB가 꺼져 있으면 건너뛴다.
+현재 기준으로 테스트 25개가 통과해야 한다(`tests/test_runtime.py`는 Python 3.14가 아니면 실패한다). DB가 켜져 있으면 통합 테스트(`test_auth_live.py`, `test_gallery_live.py`)가 `secret_album_test` DB를 새로 만들어 실행하고, DB가 꺼져 있으면 건너뛴다.
 
-화면을 바꿨다면 E2E도 실행한다(설치된 Chrome 사용, 49개 확인 항목, 스크린샷은 `local\e2e`):
+화면을 바꿨다면 E2E도 실행한다(설치된 Chrome 사용, 56개 확인 항목, 스크린샷은 `local\e2e`):
 
 ```powershell
 .\.venv\Scripts\python.exe -m pip install -r requirements-dev.txt

@@ -9,7 +9,7 @@ export class ApiError extends Error {
   }
 }
 
-const AUTH_CODES = new Set(['unauthenticated', 'locked', 'mfa_required', 'totp_setup_required']);
+const AUTH_CODES = new Set(['unauthenticated', 'locked']);
 
 export function loginUrl(reason) {
   const next = location.pathname + location.search;

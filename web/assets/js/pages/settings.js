@@ -2,7 +2,7 @@
 import { api } from '../shared/api.js';
 import { boot, setTheme } from '../shared/layout.js';
 import { setBlurThumbnails } from '../shared/privacy.js';
-import { button, confirmDialog, el, errorState, formatBytes, formatDateTime, formatNumber, icon, loadingState, plural, setBusy, showDialog, toast, toastError } from '../shared/ui.js';
+import { button, el, errorState, formatBytes, formatDateTime, formatNumber, icon, loadingState, plural, setBusy, toast, toastError } from '../shared/ui.js';
 
 const main = document.getElementById('main');
 const me = await boot({ ownerOnly: true });
@@ -55,21 +55,6 @@ function passwordPanel() {
   return form;
 }
 
-async function regenerateCodes() {
-  const ok = await confirmDialog({ title: 'Generate new recovery codes?', description: 'Your current recovery codes will stop working.', confirmLabel: 'Generate new codes' });
-  if (!ok) return;
-  try {
-    const { recovery_codes: codes } = await api('/auth/recovery-codes', { method: 'POST' });
-    const dialog = el('dialog', { class: 'dialog', 'aria-labelledby': 'rc-title' }, el('div', { class: 'dialog-body' },
-      el('h2', { class: 'dialog-title', id: 'rc-title' }, 'New recovery codes'),
-      el('p', { class: 'dialog-description' }, 'These are shown only now. Write them down somewhere safe.'),
-      el('ol', { class: 'recovery-list' }, codes.map((c) => el('li', {}, c))),
-      el('div', { class: 'dialog-actions' }, button('I saved them', { variant: 'btn-primary', onclick: () => dialog.close() }))));
-    showDialog(dialog);
-    dialog.querySelector('.btn-primary').focus();
-  } catch (error) { toastError(error); }
-}
-
 const sessionsBox = el('div', {}, loadingState());
 async function loadSessions() {
   try {
@@ -96,10 +81,9 @@ try {
     el('div', { class: 'page-head' }, el('h1', {}, 'Settings')),
     el('section', { class: 'panel', 'aria-labelledby': 's-security' },
       el('h2', { id: 's-security' }, 'Security'),
-      el('p', { class: 'panel-desc' }, `${me.user.display_name} (${me.user.login_id}) · Two-step verification ${me.user.totp_enabled ? 'on' : 'not set up'}`),
+      el('p', { class: 'panel-desc' }, `${me.user.display_name} (${me.user.login_id})`),
       settingRow('Auto-lock', 'Locks the screen after a period of inactivity. Unlock with your password.',
         selectControl('idle', [[5, '5 minutes'], [15, '15 minutes'], [30, '30 minutes'], [60, '1 hour'], [240, '4 hours']], settings.session_idle_minutes, (v) => save({ session_idle_minutes: Number(v) }, 'Auto-lock time updated. It applies from the next page load.')), 'idle'),
-      settingRow('Recovery codes', 'Generate new one-time codes to use if you lose your phone.', button('Generate new codes', { variant: 'btn-outline', onclick: regenerateCodes })),
       el('h3', { class: 'label' }, 'Change password'),
       passwordPanel()),
     el('section', { class: 'panel', 'aria-labelledby': 's-sessions' }, el('h2', { id: 's-sessions' }, 'Signed-in devices'), sessionsBox),

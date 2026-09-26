@@ -6,7 +6,7 @@
 
 시스템 설계서 14장의 0~6단계 구현을 마쳤습니다.
 
-- 로그인·2단계 인증(TOTP, 복구 코드)·세션·자동 잠금·로그인 실패 잠금
+- 비밀번호 로그인·세션·자동 잠금·로그인 실패 잠금 (개인용이라 2단계 인증은 쓰지 않음)
 - 업로드(중복·형식 검사) → Worker가 WebP 파생 이미지 3종 생성(EXIF·GPS 제거)
 - 갤러리 화면(홈·앨범·모델·즐겨찾기·검색), 사진 뷰어(슬라이드쇼·정보 패널·단축키)
 - 편집 모드 일괄 작업, 휴지통(복원·영구 삭제·자동 비우기), 설정
@@ -22,7 +22,7 @@ py -3.14 -m venv .venv
 .\.venv\Scripts\python.exe scripts\admin_create.py   # 최초 1회 소유자 계정
 ```
 
-- 사이트: `http://127.0.0.1:8090` (처음 로그인할 때 2단계 인증을 등록합니다)
+- 사이트: `http://127.0.0.1:8090`
 - API 상태: `http://127.0.0.1:3051/health`, `/ready`
 - 종료: `.\stop-album.cmd`
 
@@ -31,9 +31,9 @@ py -3.14 -m venv .venv
 ```powershell
 .\.venv\Scripts\python.exe -m compileall -q scripts tests
 .\.venv\Scripts\python.exe scripts\check_module_layers.py
-.\.venv\Scripts\python.exe -m unittest discover -s tests -t .     # 26개 (DB가 켜져 있으면 통합 테스트 포함)
+.\.venv\Scripts\python.exe -m unittest discover -s tests -t .     # 25개 (DB가 켜져 있으면 통합 테스트 포함)
 
-# 화면 흐름 E2E (설치된 Chrome 사용, 49개 확인 항목, 스크린샷은 local\e2e)
+# 화면 흐름 E2E (설치된 Chrome 사용, 56개 확인 항목, 스크린샷은 local\e2e)
 .\.venv\Scripts\python.exe -m pip install -r requirements-dev.txt
 .\.venv\Scripts\python.exe tests\e2e\run_e2e.py
 ```

@@ -8,10 +8,6 @@
 .auth-card .input { border-color: oklch(1 0 0 / 18%); }
 .auth-links { display: flex; justify-content: center; gap: 16px; font-size: 14px; }
 .auth-links button { background: none; border: 0; color: oklch(0.708 0 0); text-decoration: underline; cursor: pointer; min-height: 44px; }
-.qr-box { display: grid; justify-items: center; gap: 12px; }
-.qr-box canvas, .qr-box img { background: #fff; padding: 12px; border-radius: var(--radius); width: 200px; height: 200px; image-rendering: pixelated; }
-.secret-text { font-family: var(--font-mono); font-size: 14px; letter-spacing: 0.05em; word-break: break-all; text-align: center; padding: 8px 12px; border: 1px dashed oklch(1 0 0 / 20%); border-radius: var(--radius); }
-.recovery-list { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin: 0; padding: 16px; list-style: none; border: 1px solid oklch(1 0 0 / 15%); border-radius: var(--radius); font-family: var(--font-mono); font-size: 15px; text-align: center; }
 
 /* ------------------------------------------------ 관리 화면 공통 */
 .manage-page { padding: calc(var(--header-height) + 24px) 16px 96px; max-width: 1080px; margin: 0 auto; }

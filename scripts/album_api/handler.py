@@ -208,8 +208,6 @@ class AlbumRequestHandler(BaseHTTPRequestHandler):
             return session
         if session.state == "locked":
             raise ApiError(401, "locked", "Screen locked. Enter your password to unlock.")
-        if session.state in {"mfa_required", "totp_setup_required"}:
-            raise ApiError(401, session.state, "Please complete two-step verification.")
         if level == OWNER and not session.is_owner:
             raise ApiError(403, "forbidden", "Only the owner can do this.")
         return session
@@ -373,38 +371,9 @@ def me(request: Request):
         settings = _settings_payload(cursor)
     return {
         "state": session.state,
-        "user": {"login_id": session.login_id, "display_name": session.display_name, "role": session.role, "totp_enabled": session.totp_enabled},
+        "user": {"login_id": session.login_id, "display_name": session.display_name, "role": session.role},
         "settings": settings,
     }
-
-
-@route("POST", "/auth/otp", ANY_SESSION)
-def otp(request: Request):
-    session = request.session
-    if session.state != "mfa_required":
-        raise ApiError(409, "invalid_state", "Two-step verification is not required right now. Please refresh.")
-    AlbumRequestHandler.login_limiter.check(request.ip)
-    code = str(request.json().get("code") or "")
-    _committing(lambda cursor: auth.verify_second_factor(cursor, session, code, request.handler.settings.data_key, request.ip))
-    return {"state": "active"}
-
-
-@route("GET", "/auth/totp/setup", ANY_SESSION)
-def totp_setup(request: Request):
-    if request.session.state != "totp_setup_required":
-        raise ApiError(409, "invalid_state", "Two-step verification setup is not in progress. Please refresh.")
-    with database.transaction() as cursor:
-        return auth.begin_totp_setup(cursor, request.session, request.handler.settings.data_key)
-
-
-@route("POST", "/auth/totp/enable", ANY_SESSION)
-def totp_enable(request: Request):
-    if request.session.state != "totp_setup_required":
-        raise ApiError(409, "invalid_state", "Two-step verification setup is not in progress. Please refresh.")
-    AlbumRequestHandler.login_limiter.check(request.ip)
-    code = str(request.json().get("code") or "")
-    codes = _committing(lambda cursor: auth.enable_totp(cursor, request.session, code, request.handler.settings.data_key, request.ip))
-    return {"state": "active", "recovery_codes": codes}
 
 
 @route("POST", "/auth/unlock", ANY_SESSION)
@@ -437,14 +406,6 @@ def change_password(request: Request):
     payload = request.json()
     _committing(lambda cursor: auth.change_password(cursor, request.session, str(payload.get("current") or ""), str(payload.get("new") or ""), request.ip))
     return {"changed": True}
-
-
-@route("POST", "/auth/recovery-codes", ACTIVE)
-def recovery_codes(request: Request):
-    if not request.session.totp_enabled:
-        raise ApiError(409, "totp_not_enabled", "Set up two-step verification first.")
-    with database.transaction() as cursor:
-        return {"recovery_codes": auth.regenerate_recovery_codes(cursor, request.session, request.ip)}
 
 
 @route("GET", "/auth/sessions", ACTIVE)

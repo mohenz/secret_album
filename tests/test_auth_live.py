@@ -1,8 +1,6 @@
 import unittest
 
-import pyotp
-
-from tests.live_support import Client, _state, create_user, login_owner, setup_live
+from tests.live_support import Client, create_user, login_owner, setup_live
 
 PASSWORD = "correct-horse-battery"
 
@@ -20,37 +18,16 @@ class AuthLiveTests(unittest.TestCase):
             self.assertEqual(status, 401, path)
             self.assertEqual(body["error"]["code"], "unauthenticated")
 
-    def test_02_owner_must_register_totp_then_is_active(self):
+    def test_02_password_sign_in_is_active_without_second_step(self):
         client = Client()
         status, body = client.json("POST", "/auth/login", {"login_id": "owner.auth", "password": PASSWORD})
-        self.assertEqual((status, body["state"]), (200, "totp_setup_required"))
-        # 2단계 인증 전에는 사진 API를 쓸 수 없다.
-        status, body = client.json("GET", "/albums")
-        self.assertEqual((status, body["error"]["code"]), (401, "totp_setup_required"))
-        status, setup = client.json("GET", "/auth/totp/setup")
-        self.assertEqual(status, 200)
-        self.assertTrue(setup["uri"].startswith("otpauth://totp/"))
-        status, body = client.json("POST", "/auth/totp/enable", {"code": "000000"})
-        self.assertEqual(status, 401)
-        status, body = client.json("POST", "/auth/totp/enable", {"code": pyotp.TOTP(setup["secret"]).now()})
-        self.assertEqual(status, 200)
-        self.assertEqual(len(body["recovery_codes"]), 10)
-        _state.setdefault("totp", {})["owner.auth"] = setup["secret"]
-        _state["recovery"] = body["recovery_codes"]
+        self.assertEqual((status, body["state"]), (200, "active"))
         status, me = client.json("GET", "/auth/me")
         self.assertEqual((status, me["state"], me["user"]["role"]), (200, "active", "owner"))
-
-    def test_03_second_login_requires_code_and_accepts_recovery_code_once(self):
-        client = Client()
-        status, body = client.json("POST", "/auth/login", {"login_id": "owner.auth", "password": PASSWORD})
-        self.assertEqual(body["state"], "mfa_required")
-        code = _state["recovery"][0]
-        status, body = client.json("POST", "/auth/otp", {"code": code})
-        self.assertEqual(status, 200)
-        other = Client()
-        other.json("POST", "/auth/login", {"login_id": "owner.auth", "password": PASSWORD})
-        status, body = other.json("POST", "/auth/otp", {"code": code})
-        self.assertEqual(status, 401, "복구 코드는 한 번만 쓸 수 있어야 한다")
+        self.assertEqual(client.json("GET", "/albums")[0], 200)
+        # 2단계 인증 경로는 없다.
+        self.assertEqual(client.json("POST", "/auth/otp", {"code": "123456"})[0], 404)
+        self.assertEqual(client.json("GET", "/auth/totp/setup")[0], 404)
 
     def test_04_lock_and_unlock(self):
         client = Client()

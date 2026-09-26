@@ -22,7 +22,6 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "scripts"))
 
-import pyotp  # noqa: E402
 from playwright.sync_api import expect, sync_playwright  # noqa: E402
 
 from scripts.album_api import auth, database, jobs, logs  # noqa: E402
@@ -45,8 +44,6 @@ def check(name: str, ok: bool, detail: str = "") -> None:
 
 def prepare() -> Settings:
     import psycopg
-    from cryptography.fernet import Fernet
-
     env = _load_env()
     admin = dict(host=env.get("PGHOST", "127.0.0.1"), port=int(env.get("PGPORT", "54328")), user=env["PGUSER"], password=env["PGPASSWORD"])
     with psycopg.connect(dbname="postgres", autocommit=True, **admin) as conn:
@@ -59,7 +56,7 @@ def prepare() -> Settings:
         auth.create_user(cursor, "owner.e2e", "Owner", PASSWORD, "owner")
     settings = dataclasses.replace(
         Settings.from_environment(), media_root=Path(tempfile.mkdtemp(prefix="album_e2e_")),
-        data_key=Fernet.generate_key().decode(), web_origins=(BASE,), api_port=API_PORT,
+        web_origins=(BASE,), api_port=API_PORT,
     )
     AlbumRequestHandler.settings = settings
     AlbumRequestHandler.login_limiter = auth.RateLimiter(per_minute=10_000)
@@ -148,17 +145,6 @@ def run() -> int:
         page.fill("#password", PASSWORD)
         page.click("button[type=submit]")
 
-        # 2. 2단계 인증 등록 → 복구 코드
-        page.wait_for_selector(".secret-text")
-        secret = page.locator(".secret-text").inner_text().replace(" ", "")
-        check("2단계 인증 등록 화면(QR·키)", page.locator(".qr-box img").count() == 1 and len(secret) >= 16)
-        page.screenshot(path=OUT / "01-totp-setup.png")
-        page.fill("#otp-setup", pyotp.TOTP(secret).now())
-        page.click("button[type=submit]")
-        page.wait_for_selector(".recovery-list")
-        check("복구 코드 10개 표시", page.locator(".recovery-list li").count() == 10)
-        page.check("#saved")
-        page.click("text=Continue")
         page.wait_for_url(re.compile(r"/pages/albums\.html"))
         check("로그인 후 원래 화면으로 복귀", True)
 

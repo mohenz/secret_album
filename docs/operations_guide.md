@@ -42,7 +42,6 @@ ALBUM_WEB_ORIGINS=http://192.168.0.2:8090,http://localhost:8090,http://127.0.0.1
 ```
 
 - 사진 디스크를 따로 쓰면 `ALBUM_MEDIA_ROOT=F:\secret_album_media`를 추가한다.
-- `ALBUM_DATA_KEY`(2단계 인증 비밀값 암호화 키)는 **서버 밖 안전한 곳에 따로 보관**한다. 잃어버리면 모든 사용자가 2단계 인증을 다시 등록해야 한다.
 
 ```powershell
 # 4) 소유자 계정 만들기 (웹 가입 화면 없음)
@@ -55,7 +54,7 @@ ALBUM_WEB_ORIGINS=http://192.168.0.2:8090,http://localhost:8090,http://127.0.0.1
 .\scripts\register_supervisor.ps1 -User "SERVER\albumsvc"
 ```
 
-접속: `http://192.168.0.2:8090` → 로그인 → 처음 한 번 2단계 인증(인증 앱) 등록 → 복구 코드 보관.
+접속: `http://192.168.0.2:8090` → 아이디·비밀번호로 로그인.
 
 ## 3. 배포 (Gitea push)
 
@@ -138,8 +137,7 @@ schtasks /Change /TN "SecretAlbum-Supervisor" /ENABLE
 | 업로드한 사진이 계속 "Processing…" | Worker 실행 여부, `local\worker.log` | Worker는 감시 작업이 다시 띄운다. 멈춘 작업은 Worker 재시작 시 15분 기준으로 회수된다 |
 | 사진이 "Processing failed" | 설정 화면 실패 건수, `local\worker.log` | 손상·지원하지 않는 파일. 휴지통으로 옮기고 원본을 다시 올린다 |
 | 로그인 5회 실패로 잠김 | — | 10분 뒤 다시 시도 |
-| 2단계 인증 기기 분실 | — | 복구 코드로 로그인 → 설정에서 새 복구 코드 발급 |
-| 복구 코드도 없음 | — | 서버에서 DB의 `users.totp_enabled`를 false로 바꾸면 다음 로그인 때 다시 등록한다 (소유자 본인 확인 후) |
+| 비밀번호 분실 | — | 서버에서 새 계정을 만들 수 없으므로(소유자 1명), DB에서 `users` 행을 지운 뒤 `scriptsdmin_create.py`로 다시 만든다. 사진·앨범은 그대로 남는다 |
 | `PostgreSQL 시작 실패` | `local\postgres.log` | 다른 프로세스가 54328을 쓰는지 확인. 데이터 폴더 손상 시 4.3 복원 |
 
 유지보수(패키지 업그레이드, 복원) 중에는 감시 작업이 서비스를 다시 띄우지 않도록 먼저 끈다:

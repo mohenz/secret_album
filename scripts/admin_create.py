@@ -61,8 +61,6 @@ def main() -> int:
         print(exc.message, file=sys.stderr)
         return 1
     print(f"계정을 만들었습니다: {login_id} ({args.role})")
-    if args.role == "owner":
-        print("처음 로그인할 때 2단계 인증(인증 앱) 등록 화면이 나옵니다.")
     return 0
 
 

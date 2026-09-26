@@ -16,7 +16,6 @@ LOGIN_MAX_FAILURES = 5
 LOGIN_LOCK_MINUTES = 10
 LOGIN_RATE_PER_MINUTE = 20
 MIN_PASSWORD_LENGTH = 10
-RECOVERY_CODE_COUNT = 10
 MAX_JSON_BYTES = 1_048_576
 
 # 파생 이미지 규격: (이름, 긴 변 최대 픽셀, WebP 품질)
@@ -58,7 +57,6 @@ class Settings:
     db_pool_size: int
     worker_concurrency: int
     slow_request_ms: int
-    data_key: str
     cookie_secure: bool
 
     @classmethod
@@ -83,7 +81,6 @@ class Settings:
             db_pool_size=_integer("ALBUM_DB_POOL_SIZE", 8),
             worker_concurrency=_integer("ALBUM_WORKER_CONCURRENCY", 3),
             slow_request_ms=_integer("ALBUM_SLOW_REQUEST_MS", 1000),
-            data_key=os.getenv("ALBUM_DATA_KEY", "").strip(),
             cookie_secure=_boolean("ALBUM_COOKIE_SECURE", False),
         )
 

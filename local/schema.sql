@@ -6,8 +6,7 @@ CREATE TABLE IF NOT EXISTS users (
  id uuid PRIMARY KEY DEFAULT gen_random_uuid(), login_id text NOT NULL UNIQUE,
  display_name text NOT NULL, password_hash text NOT NULL,
  role text NOT NULL DEFAULT 'viewer' CHECK (role IN ('owner','viewer')),
- totp_secret text, totp_enabled boolean NOT NULL DEFAULT false,
- recovery_codes jsonb NOT NULL DEFAULT '[]', failed_login_count integer NOT NULL DEFAULT 0 CHECK (failed_login_count >= 0),
+ failed_login_count integer NOT NULL DEFAULT 0 CHECK (failed_login_count >= 0),
  locked_until timestamptz, disabled_at timestamptz,
  created_at timestamptz NOT NULL DEFAULT now(), updated_at timestamptz NOT NULL DEFAULT now()
 );

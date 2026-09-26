@@ -66,12 +66,9 @@ def setup_live():
         database.apply_schema(cursor)
 
     media_root = Path(tempfile.mkdtemp(prefix="secret_album_test_"))
-    from cryptography.fernet import Fernet
-
     settings = dataclasses.replace(
         Settings.from_environment(),
         media_root=media_root,
-        data_key=Fernet.generate_key().decode("ascii"),
         web_origins=(ORIGIN,),
         slow_request_ms=60_000,
     )
@@ -138,25 +135,9 @@ def create_user(login_id: str, password: str, role: str = "owner") -> str:
         return auth.create_user(cursor, login_id, login_id, password, role)
 
 
-def login_owner(client: Client, login_id: str, password: str) -> list[str]:
-    """비밀번호 → 2단계 인증 등록까지 마치고 복구 코드를 돌려준다."""
-    import pyotp
-
+def login_owner(client: Client, login_id: str, password: str) -> None:
     status, body = client.json("POST", "/auth/login", {"login_id": login_id, "password": password})
-    assert status == 200, body
-    if body["state"] == "active":
-        return []
-    if body["state"] == "mfa_required":
-        secret = _state["totp"][login_id]
-        status, body = client.json("POST", "/auth/otp", {"code": pyotp.TOTP(secret).now()})
-        assert status == 200, body
-        return []
-    status, setup = client.json("GET", "/auth/totp/setup")
-    assert status == 200, setup
-    _state.setdefault("totp", {})[login_id] = setup["secret"]
-    status, body = client.json("POST", "/auth/totp/enable", {"code": pyotp.TOTP(setup["secret"]).now()})
-    assert status == 200, body
-    return body["recovery_codes"]
+    assert status == 200 and body["state"] == "active", body
 
 
 def sample_jpeg(color=(180, 40, 60), size=(1200, 800), with_gps=True, marker: int = 0) -> bytes:
