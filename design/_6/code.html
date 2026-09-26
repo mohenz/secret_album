@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="ko"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><meta content="web_dashboard" name="shell-type"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = {
+    darkMode: "class",
+    theme: {
+      extend: {
+        "colors": {
+          "surface-tint": "#adc6ff",
+          "error-container": "#93000a",
+          "on-surface-variant": "#c2c6d6",
+          "on-primary-fixed-variant": "#004395",
+          "surface-variant": "#353437",
+          "primary-container": "#4d8eff",
+          "on-tertiary-fixed": "#311400",
+          "on-tertiary-fixed-variant": "#723600",
+          "on-tertiary-container": "#461f00",
+          "background": "#131315",
+          "surface-container-highest": "#353437",
+          "on-tertiary": "#502400",
+          "surface-bright": "#39393b",
+          "on-primary": "#002e6a",
+          "on-error": "#690005",
+          "on-background": "#e5e1e4",
+          "error": "#ffb4ab",
+          "surface": "#131315",
+          "primary-fixed": "#d8e2ff",
+          "primary-fixed-dim": "#adc6ff",
+          "on-primary-container": "#00285d",
+          "inverse-surface": "#e5e1e4",
+          "on-primary-fixed": "#001a42",
+          "surface-container": "#201f22",
+          "secondary-fixed": "#dbe1ff",
+          "tertiary": "#ffb786",
+          "tertiary-fixed": "#ffdcc6",
+          "outline-variant": "#424754",
+          "secondary-container": "#0053db",
+          "surface-container-high": "#2a2a2c",
+          "on-secondary-fixed-variant": "#003ea8",
+          "surface-container-low": "#1c1b1d",
+          "surface-dim": "#131315",
+          "tertiary-container": "#df7412",
+          "on-error-container": "#ffdad6",
+          "tertiary-fixed-dim": "#ffb786",
+          "surface-container-lowest": "#0e0e10",
+          "on-secondary": "#002a78",
+          "outline": "#8c909f",
+          "on-secondary-container": "#cdd7ff",
+          "on-surface": "#e5e1e4",
+          "primary": "#adc6ff",
+          "secondary": "#b4c5ff",
+          "on-secondary-fixed": "#00174b",
+          "inverse-primary": "#005ac2",
+          "secondary-fixed-dim": "#b4c5ff",
+          "inverse-on-surface": "#313032"
+        },
+        "borderRadius": {
+          "DEFAULT": "0.25rem",
+          "lg": "0.5rem",
+          "xl": "0.75rem",
+          "full": "9999px"
+        },
+        "spacing": {
+          "gutter": "0.25rem",
+          "gutter-loose": "1.5rem",
+          "space-xs": "0.25rem",
+          "space-sm": "0.5rem",
+          "space-lg": "1.5rem",
+          "margin": "0rem",
+          "space-xl": "3rem",
+          "margin-page": "2rem",
+          "space-md": "1rem"
+        },
+        "fontFamily": {
+          "body-md": [
+            "Geist"
+          ],
+          "body-lg": [
+            "Geist"
+          ],
+          "label-md": [
+            "Geist"
+          ],
+          "label-sm": [
+            "Geist"
+          ],
+          "display-hero": [
+            "Geist"
+          ],
+          "headline-lg": [
+            "Geist"
+          ],
+          "headline-sm": [
+            "Geist"
+          ],
+          "headline-lg-mobile": [
+            "Geist"
+          ],
+          "headline-md": [
+            "Geist"
+          ],
+          "display-hero-mobile": [
+            "Geist"
+          ]
+        },
+        "fontSize": {
+          "body-md": [
+            "14px",
+            {
+              "lineHeight": "22px",
+              "letterSpacing": "0.005em",
+              "fontWeight": "400"
+            }
+          ],
+          "body-lg": [
+            "16px",
+            {
+              "lineHeight": "26px",
+              "letterSpacing": "0em",
+              "fontWeight": "400"
+            }
+          ],
+          "label-md": [
+            "12px",
+            {
+              "lineHeight": "16px",
+              "letterSpacing": "0.04em",
+              "fontWeight": "500"
+            }
+          ],
+          "label-sm": [
+            "10px",
+            {
+              "lineHeight": "14px",
+              "letterSpacing": "0.08em",
+              "fontWeight": "500"
+            }
+          ],
+          "display-hero": [
+            "56px",
+            {
+              "lineHeight": "64px",
+              "letterSpacing": "-0.03em",
+              "fontWeight": "300"
+            }
+          ],
+          "headline-lg": [
+            "36px",
+            {
+              "lineHeight": "44px",
+              "letterSpacing": "-0.02em",
+              "fontWeight": "400"
+            }
+          ],
+          "headline-sm": [
+            "18px",
+            {
+              "lineHeight": "26px",
+              "letterSpacing": "-0.01em",
+              "fontWeight": "500"
+            }
+          ],
+          "headline-lg-mobile": [
+            "26px",
+            {
+              "lineHeight": "34px",
+              "letterSpacing": "-0.01em",
+              "fontWeight": "400"
+            }
+          ],
+          "headline-md": [
+            "24px",
+            {
+              "lineHeight": "32px",
+              "letterSpacing": "-0.015em",
+              "fontWeight": "400"
+            }
+          ],
+          "display-hero-mobile": [
+            "36px",
+            {
+              "lineHeight": "44px",
+              "letterSpacing": "-0.02em",
+              "fontWeight": "300"
+            }
+          ]
+        }
+      },
+    },
+  }</script></head><body class="bg-surface font-body-md text-body-md text-on-surface"><aside class="fixed left-0 top-0 h-full w-64 bg-surface-container-lowest z-50 flex flex-col justify-between py-space-lg"><div class="flex flex-col gap-space-lg"><div class="px-space-lg flex items-center gap-space-sm"><span class="material-symbols-outlined text-primary text-[20px]">lock</span><span class="font-headline-sm text-headline-sm text-on-surface tracking-tight font-medium">비밀앨범</span><span class="font-label-sm text-label-sm px-space-xs py-[2px] rounded bg-surface-container-high text-on-surface-variant">STUDIO</span></div><nav class="flex flex-col gap-space-xs px-space-md" data-active-classes="bg-surface-container-high text-on-surface font-medium"><a class="flex items-center gap-space-sm px-space-md py-space-sm rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" data-path="archive-overview" href="#"><span class="material-symbols-outlined text-[18px]">grid_view</span><span class="font-body-md text-body-md">아카이브 총괄</span></a><a aria-current="page" class="flex items-center gap-space-sm px-space-md py-space-sm rounded-lg transition-colors bg-surface-container-high text-on-surface font-medium" data-path="album-management" href="#"><span class="material-symbols-outlined text-[18px]">photo_library</span><span class="font-body-md text-body-md">앨범 컬렉션</span></a><a class="flex items-center gap-space-sm px-space-md py-space-sm rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" data-path="asset-curation" href="#"><span class="material-symbols-outlined text-[18px]">filter</span><span class="font-body-md text-body-md">미디어 큐레이션</span></a><a class="flex items-center gap-space-sm px-space-md py-space-sm rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" data-path="exhibition-publish" href="#"><span class="material-symbols-outlined text-[18px]">visibility</span><span class="font-body-md text-body-md">전시 배포 설정</span></a><a class="flex items-center gap-space-sm px-space-md py-space-sm rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" data-path="access-keys" href="#"><span class="material-symbols-outlined text-[18px]">key</span><span class="font-body-md text-body-md">비밀키 &amp; 접근 권한</span></a></nav></div><div class="px-space-md flex flex-col gap-space-xs"><a class="flex items-center justify-between px-space-md py-space-sm rounded-lg bg-surface-container text-on-surface hover:bg-surface-container-high transition-colors" data-path="public-gallery" href="#"><span class="font-body-md text-body-md flex items-center gap-space-xs"><span class="material-symbols-outlined text-[16px] text-primary">arrow_back</span>전시실로 복귀</span><span class="font-label-sm text-label-sm text-on-surface-variant">감상</span></a><div class="px-space-md pt-space-sm text-on-surface-variant font-label-sm text-label-sm">저장공간 4.8 GB / 10 GB</div></div></aside><div class="pl-64"><header class="fixed top-0 left-64 right-0 h-16 bg-surface/90 backdrop-blur-xl z-40 flex items-center justify-between px-space-xl"><div class="flex items-center gap-space-sm"><span class="font-label-md text-label-md text-on-surface-variant">스튜디오</span><span class="font-label-md text-label-md text-outline">/</span><span class="font-label-md text-label-md text-on-surface font-medium">비공개 수장고</span></div><div class="flex items-center gap-space-md"><div class="flex items-center gap-space-xs px-space-sm py-1 rounded bg-surface-container-low text-on-surface-variant font-label-sm text-label-sm"><span class="w-2 h-2 rounded-full bg-primary"></span>암호화 보안 세션 연결됨</div><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></header><main class="relative pt-16 bg-surface min-h-screen px-space-xl"><div class="flex flex-col w-full pb-space-xl">
+<!-- Top Navigation & Return Action Bar -->
+<div class="flex items-center justify-between py-space-md mb-space-md">
+<div class="flex items-center gap-space-md">
+<a class="group inline-flex items-center gap-space-xs px-space-md py-space-sm rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface transition-colors" href="#">
+<span class="material-symbols-outlined text-[18px] group-hover:-translate-x-0.5 transition-transform">arrow_back</span>
+<span class="font-body-md text-body-md font-medium">관리 목록으로</span>
+</a>
+<div class="flex items-center gap-space-xs text-on-surface-variant font-label-md text-label-md">
+<span>사진 관리</span>
+<span class="text-outline">/</span>
+<span class="text-on-surface font-medium">새 사진 등록</span>
+</div>
+</div>
+<div class="flex items-center gap-space-sm">
+<div class="inline-flex items-center gap-space-xs px-space-md py-space-xs rounded-full bg-surface-container-high text-on-surface-variant font-label-md text-label-md">
+<span class="w-1.5 h-1.5 rounded-full bg-primary-container animate-pulse"></span>
+<span>스토리지 잔여: 5.2 GB (가용량 52%)</span>
+</div>
+</div>
+</div>
+<!-- Editorial Section Header -->
+<div class="flex flex-col gap-space-xs mb-space-lg">
+<div class="flex items-center gap-space-xs text-primary font-label-sm text-label-sm uppercase tracking-wider">
+<span>NOCTURNE STUDIO INTAKE</span>
+<span class="text-outline-variant">•</span>
+<span>SECURE VAULT v4.1</span>
+</div>
+<h1 class="font-headline-lg text-headline-lg text-on-surface font-light tracking-tight">사진 등록 및 업로드</h1>
+<p class="font-body-lg text-body-lg text-on-surface-variant max-w-2xl">
+      클립보드 붙여넣기(Ctrl+V) 또는 고해상도 마스터 파일을 직접 드래그하여 즉시 비공개 아카이브에 영구 암호화 보관하세요.
+    </p>
+</div>
+<!-- Primary Workspace: Dropzone & Side Inspector Layout -->
+<div class="grid grid-cols-1 xl:grid-cols-12 gap-space-lg items-start">
+<!-- Left / Center: Upload Stream Engine (8 Cols) -->
+<div class="xl:col-span-8 flex flex-col gap-space-lg">
+<!-- Massive Multi-Channel Dropzone -->
+<div class="relative group rounded-xl p-space-xl bg-surface-container-lowest transition-all duration-300 hover:bg-surface-container-low cursor-pointer overflow-hidden" id="dropzone">
+<!-- Subtle Active Ambient Gradient -->
+<div class="absolute -inset-px rounded-xl bg-gradient-to-b from-primary/20 via-transparent to-transparent opacity-60 pointer-events-none"></div>
+<div class="absolute inset-0 bg-surface-container-lowest/80 backdrop-blur-sm pointer-events-none"></div>
+<div class="relative z-10 flex flex-col items-center justify-center text-center py-space-lg px-space-md">
+<!-- Visual Badges & Glyphs -->
+<div class="relative flex items-center justify-center mb-space-md">
+<div class="w-20 h-20 rounded-full bg-surface-container flex items-center justify-center group-hover:scale-105 transition-transform duration-300">
+<span class="material-symbols-outlined text-primary text-[36px]">cloud_upload</span>
+</div>
+<div class="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-surface-container-highest flex items-center justify-center shadow-lg">
+<span class="material-symbols-outlined text-on-surface text-[18px]">content_paste</span>
+</div>
+</div>
+<!-- Headline Action -->
+<h2 class="font-headline-md text-headline-md text-on-surface font-normal mb-space-xs tracking-tight">
+            여기로 사진을 드래그하거나 클릭하여 파일 선택
+          </h2>
+<!-- Keyboard Clipboard Prompt Badge -->
+<div class="inline-flex items-center gap-space-xs px-space-md py-space-xs rounded-full bg-surface-container-high text-primary font-label-md text-label-md my-space-sm shadow-sm">
+<span class="material-symbols-outlined text-[16px]">assignment_turned_in</span>
+<span>클립보드 이미지 즉시 붙여넣기 지원 (Ctrl + V / ⌘ + V)</span>
+</div>
+<!-- Specifications Monograph Detail -->
+<p class="font-body-md text-body-md text-on-surface-variant max-w-lg mb-space-lg">
+            JPG, PNG, WEBP, DNG / Sony · Canon RAW 최대 100MB 지원<br/>
+            무손실 암호화 파이프라인 · 일괄 최대 200장 동시 업로드
+          </p>
+<!-- Action Buttons -->
+<div class="flex flex-wrap items-center justify-center gap-space-sm">
+<button class="inline-flex items-center gap-space-xs px-space-lg py-space-sm rounded-lg bg-primary-container hover:bg-primary-container/90 text-on-primary font-body-md text-body-md font-medium transition-colors shadow-md" type="button">
+<span class="material-symbols-outlined text-[18px]">folder_open</span>
+<span>로컬 파일 탐색</span>
+</button>
+<button class="inline-flex items-center gap-space-xs px-space-lg py-space-sm rounded-lg bg-surface-container-high hover:bg-surface-bright text-on-surface font-body-md text-body-md font-medium transition-colors" onclick="handleSimulatePaste()" type="button">
+<span class="material-symbols-outlined text-[18px]">content_paste_go</span>
+<span>클립보드 붙여넣기 실행</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Batch Queue & Processing Pipeline Overview -->
+<div class="flex flex-col gap-space-md">
+<!-- Queue Meta Header -->
+<div class="flex items-center justify-between px-space-xs">
+<div class="flex items-center gap-space-sm">
+<span class="font-headline-sm text-headline-sm text-on-surface font-medium">업로드 대기열 및 스테이징</span>
+<span class="font-label-sm text-label-sm px-space-xs py-0.5 rounded bg-primary-container/20 text-primary font-medium">3개 처리 중</span>
+</div>
+<div class="flex items-center gap-space-sm font-label-md text-label-md text-on-surface-variant">
+<span>대기열 정렬: 기본 등록순</span>
+<button class="text-on-surface hover:text-primary transition-colors" type="button">일괄 회전</button>
+<span class="text-outline-variant">•</span>
+<button class="text-error hover:opacity-80 transition-opacity" type="button">전체 취소</button>
+</div>
+</div>
+<!-- Queue Cards List -->
+<div class="flex flex-col gap-space-sm">
+<!-- ITEM 1: Upload Complete (Clipboard Imported) -->
+<div class="group relative rounded-xl bg-surface-container-low hover:bg-surface-container transition-colors p-space-md flex flex-col md:flex-row items-start md:items-center gap-space-md">
+<!-- Thumbnail Visual -->
+<div class="relative w-24 h-24 shrink-0 rounded-lg overflow-hidden bg-surface-container-lowest">
+<img class="w-full h-full object-cover" data-alt="High contrast editorial black and white portrait of a Korean female model in a dark minimal photography studio, cinematic rim lighting, crisp 85mm lens sharpness, delicate shadows" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBnyvVXrVPbxN0D_cb-9D7E8TYOsrntB4kVd3kzxwICiAMuOEFKyMSe-DhLgCBCI6ue11C_CJ-8o9MAmPXptKgD6poTiaNwq5K9O5-Mu5NiGLzbUEwxUtL2MqFCj-i2Pa0_egCqnHvWxg8zPS0aQnjSNqakJkWwVi3pvuDqry9RQmN4U5Dq-vpTuzGvijWNNFYkuBvzQExTh7AzSYQaQ_V8BrdZew-fc-ssfZ8yiKKrd8E2ONmzwET3vw"/>
+<div class="absolute bottom-1 left-1 px-1.5 py-0.5 rounded bg-surface-container-lowest/80 text-[10px] text-primary font-mono font-medium">CLIPBOARD</div>
+</div>
+<!-- Content Detail & EXIF Info -->
+<div class="flex-1 min-w-0 flex flex-col justify-between py-0.5 w-full">
+<div class="flex items-center justify-between mb-1">
+<div class="flex items-center gap-space-xs min-w-0">
+<span class="font-body-lg text-body-lg text-on-surface font-medium truncate">SY_2026_0912_088.jpg</span>
+<span class="material-symbols-outlined text-primary text-[18px]" title="암호화 및 해시 검증 완료">verified</span>
+</div>
+<div class="flex items-center gap-space-xs shrink-0">
+<span class="font-label-sm text-label-sm text-primary font-medium">업로드 완료 100%</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant font-mono">8.4 MB</span>
+</div>
+</div>
+<!-- Progress Bar -->
+<div class="w-full h-1.5 rounded-full bg-surface-container-highest overflow-hidden mb-space-xs">
+<div class="h-full bg-primary-container rounded-full w-full"></div>
+</div>
+<!-- Extracted EXIF Monograph -->
+<div class="flex flex-wrap items-center gap-x-space-md gap-y-1 text-on-surface-variant font-label-md text-label-md font-mono">
+<span class="inline-flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px] text-outline">photo_camera</span>
+                  Sony α7 IV
+                </span>
+<span class="inline-flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px] text-outline">lens</span>
+                  FE 85mm F1.4 GM
+                </span>
+<span>f/1.4</span>
+<span>1/800s</span>
+<span>ISO 100</span>
+<span class="text-primary font-sans font-medium text-[11px] ml-auto">EXIF 태그 보존됨</span>
+</div>
+</div>
+<!-- Item Level Action Controls -->
+<div class="flex items-center md:flex-col gap-1 shrink-0 self-end md:self-center">
+<div class="flex items-center gap-1">
+<button class="p-1.5 rounded hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface transition-colors" title="시계방향 회전" type="button">
+<span class="material-symbols-outlined text-[18px]">rotate_right</span>
+</button>
+<button class="p-1.5 rounded hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface transition-colors" title="암부 보정 / 노출 프리뷰" type="button">
+<span class="material-symbols-outlined text-[18px]">auto_fix_high</span>
+</button>
+<button class="p-1.5 rounded hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface transition-colors" title="미리보기" type="button">
+<span class="material-symbols-outlined text-[18px]">fullscreen</span>
+</button>
+<button class="p-1.5 rounded hover:bg-surface-container-high text-on-surface-variant hover:text-error transition-colors" title="항목 삭제" type="button">
+<span class="material-symbols-outlined text-[18px]">close</span>
+</button>
+</div>
+</div>
+</div>
+<!-- ITEM 2: Actively Uploading (Drag & Drop) -->
+<div class="group relative rounded-xl bg-surface-container-low hover:bg-surface-container transition-colors p-space-md flex flex-col md:flex-row items-start md:items-center gap-space-md">
+<!-- Thumbnail Visual with Loading Overlay -->
+<div class="relative w-24 h-24 shrink-0 rounded-lg overflow-hidden bg-surface-container-lowest">
+<img class="w-full h-full object-cover opacity-75" data-alt="Atmospheric architectural natural light setting in an industrial loft in Seongsu, raw concrete background with cast shadows and moody dusk ambience, fine art color tonality" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAgPyhFCueo07i-a9qbPHfpxVReg8lG5zLAeBOZuP0COJTNTnwDr2krIecy1bbcf8CdVfP97Op0VM3uNmWelmMYwRP6lc4Lw7lAifFQJV9ELguMQGp9x6L3zd5UAldpl-oXBIRHocXcZx5Bmz0CDPFJLMeMaz3_YGTUv4Np9CpCqAaaU0p7jOU-yqDf6Mq_7tuKOeCGhM0p4fT8ETfx5o6820v7zIdaDDJRZ5dpOs8OzvQ6GbHAyQSxQA"/>
+<div class="absolute inset-0 bg-surface/30 backdrop-blur-[1px] flex items-center justify-center">
+<span class="material-symbols-outlined text-primary text-[24px] animate-spin">sync</span>
+</div>
+</div>
+<!-- Content Detail & Progress -->
+<div class="flex-1 min-w-0 flex flex-col justify-between py-0.5 w-full">
+<div class="flex items-center justify-between mb-1">
+<div class="flex items-center gap-space-xs min-w-0">
+<span class="font-body-lg text-body-lg text-on-surface font-medium truncate">SY_2026_0912_089.jpg</span>
+<span class="font-label-sm text-label-sm px-1.5 py-0.5 rounded bg-surface-container-high text-on-surface-variant">드래그 앤 드롭</span>
+</div>
+<div class="flex items-center gap-space-xs shrink-0">
+<span class="font-label-sm text-label-sm text-primary font-mono font-medium">74%</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant font-mono">10.5 / 14.2 MB</span>
+</div>
+</div>
+<!-- Animated Progress Bar -->
+<div class="w-full h-1.5 rounded-full bg-surface-container-highest overflow-hidden mb-space-xs">
+<div class="h-full bg-primary-container rounded-full transition-all duration-300" style="width: 74%"></div>
+</div>
+<!-- Transfer Speed & Status Metadata -->
+<div class="flex items-center justify-between text-on-surface-variant font-label-md text-label-md">
+<span class="inline-flex items-center gap-1 font-mono">
+<span class="material-symbols-outlined text-[14px] text-primary">speed</span>
+                  전송 속도: 18.4 MB/s (잔여 0.2초)
+                </span>
+<span class="text-outline font-mono text-[11px]">SHA-256 청크 동시 스트리밍</span>
+</div>
+</div>
+<!-- Item Controls -->
+<div class="flex items-center md:flex-col gap-1 shrink-0 self-end md:self-center">
+<button class="p-1.5 rounded hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface transition-colors" title="일시 중단" type="button">
+<span class="material-symbols-outlined text-[18px]">pause</span>
+</button>
+<button class="p-1.5 rounded hover:bg-surface-container-high text-on-surface-variant hover:text-error transition-colors" title="업로드 취소" type="button">
+<span class="material-symbols-outlined text-[18px]">close</span>
+</button>
+</div>
+</div>
+<!-- ITEM 3: RAW Waiting in Queue -->
+<div class="group relative rounded-xl bg-surface-container-low hover:bg-surface-container transition-colors p-space-md flex flex-col md:flex-row items-start md:items-center gap-space-md opacity-85">
+<!-- RAW Thumbnail Placeholder -->
+<div class="relative w-24 h-24 shrink-0 rounded-lg overflow-hidden bg-surface-container-lowest flex flex-col items-center justify-center">
+<span class="material-symbols-outlined text-outline text-[32px]">raw_on</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant font-mono mt-1">DNG RAW</span>
+</div>
+<!-- Content Detail -->
+<div class="flex-1 min-w-0 flex flex-col justify-between py-0.5 w-full">
+<div class="flex items-center justify-between mb-1">
+<div class="flex items-center gap-space-xs min-w-0">
+<span class="font-body-lg text-body-lg text-on-surface font-medium truncate">HS_STUDIO_044.raw</span>
+<span class="font-label-sm text-label-sm px-1.5 py-0.5 rounded bg-surface-container-highest text-tertiary">대형 RAW</span>
+</div>
+<div class="flex items-center gap-space-xs shrink-0">
+<span class="font-label-sm text-label-sm text-on-surface-variant">순서 대기 중</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant font-mono">42.1 MB</span>
+</div>
+</div>
+<!-- Idle Progress Bar -->
+<div class="w-full h-1.5 rounded-full bg-surface-container-highest overflow-hidden mb-space-xs">
+<div class="h-full bg-outline-variant rounded-full w-0"></div>
+</div>
+<div class="flex items-center justify-between text-on-surface-variant font-label-md text-label-md">
+<span class="text-on-surface-variant">업로드 파이프라인 큐 #3 순차 대기</span>
+<span class="text-outline font-mono text-[11px]">로컬 버퍼 점검 완료</span>
+</div>
+</div>
+<!-- Item Controls -->
+<div class="flex items-center md:flex-col gap-1 shrink-0 self-end md:self-center">
+<button class="p-1.5 rounded hover:bg-surface-container-high text-on-surface-variant hover:text-error transition-colors" title="큐에서 제거" type="button">
+<span class="material-symbols-outlined text-[18px]">close</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Right: Bulk Metadata & Assignment Inspector Panel (4 Cols) -->
+<div class="xl:col-span-4 flex flex-col gap-space-md sticky top-20">
+<div class="rounded-xl bg-surface-container-lowest p-space-lg flex flex-col gap-space-lg shadow-sm">
+<!-- Panel Header -->
+<div class="flex items-center justify-between pb-space-sm border-b border-surface-container-high/40">
+<div class="flex items-center gap-space-xs">
+<span class="material-symbols-outlined text-primary text-[20px]">tune</span>
+<span class="font-headline-sm text-headline-sm text-on-surface font-medium">일괄 속성 지정</span>
+</div>
+<span class="font-label-sm text-label-sm px-space-xs py-0.5 rounded bg-surface-container-high text-on-surface-variant">일괄 적용 중</span>
+</div>
+<!-- Assignment Form Elements -->
+<div class="flex flex-col gap-space-md">
+<!-- Field 1: Target Album Selection -->
+<div class="flex flex-col gap-space-xs">
+<label class="font-label-md text-label-md text-on-surface font-medium flex items-center justify-between">
+<span>대상 앨범 선택</span>
+<a class="text-primary hover:underline text-[11px] font-normal" href="#">+ 새 앨범 생성</a>
+</label>
+<div class="relative">
+<select class="w-full appearance-none bg-surface-container rounded-lg px-space-md py-space-sm font-body-md text-body-md text-on-surface focus:outline-none focus:ring-1 focus:ring-primary-container pr-10 cursor-pointer">
+<option value="fall-seongsu">가을 성수 스튜디오 (기본 수장고)</option>
+<option value="monochrome-noir">2026 모노크롬 누아르 기획전</option>
+<option value="archive-raw">개인 미공개 원본 컷 (Private RAW)</option>
+</select>
+<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant pointer-events-none text-[18px]">expand_more</span>
+</div>
+</div>
+<!-- Field 2: Model Assignment Chip Selector -->
+<div class="flex flex-col gap-space-xs">
+<label class="font-label-md text-label-md text-on-surface font-medium">모델 / 인물 태깅</label>
+<div class="flex flex-wrap items-center gap-space-xs p-space-xs rounded-lg bg-surface-container min-h-[42px]">
+<!-- Selected Chip -->
+<span class="inline-flex items-center gap-1 pl-space-sm pr-space-xs py-1 rounded bg-primary text-on-primary font-label-md text-label-md font-medium">
+<span class="w-1.5 h-1.5 rounded-full bg-on-primary"></span>
+                한서윤
+                <button class="hover:opacity-75" type="button"><span class="material-symbols-outlined text-[14px]">close</span></button>
+</span>
+<!-- Unselected Quick Suggestions -->
+<button class="px-space-sm py-1 rounded bg-surface-container-high hover:bg-surface-bright text-on-surface-variant font-label-md text-label-md transition-colors" type="button">+ 이다인</button>
+<button class="px-space-sm py-1 rounded bg-surface-container-high hover:bg-surface-bright text-on-surface-variant font-label-md text-label-md transition-colors" type="button">+ 무명/풍경</button>
+</div>
+</div>
+<!-- Field 3: Tags Input -->
+<div class="flex flex-col gap-space-xs">
+<label class="font-label-md text-label-md text-on-surface font-medium">큐레이션 해시태그</label>
+<div class="p-space-sm rounded-lg bg-surface-container flex flex-wrap gap-space-xs items-center">
+<span class="px-space-xs py-0.5 rounded bg-surface-container-highest text-on-surface font-label-md text-label-md">#스튜디오</span>
+<span class="px-space-xs py-0.5 rounded bg-surface-container-highest text-on-surface font-label-md text-label-md">#자연광</span>
+<span class="px-space-xs py-0.5 rounded bg-surface-container-highest text-on-surface font-label-md text-label-md">#포트레이트</span>
+<span class="px-space-xs py-0.5 rounded bg-surface-container-highest text-on-surface font-label-md text-label-md">#85mm</span>
+<input class="flex-1 min-w-[90px] bg-transparent text-on-surface font-body-md text-body-md focus:outline-none placeholder:text-outline text-xs" placeholder="태그 입력 후 Enter..." type="text"/>
+</div>
+</div>
+<!-- Field 4: Confidentiality & Security Tier Switch -->
+<div class="flex flex-col gap-space-xs pt-space-xs">
+<label class="font-label-md text-label-md text-on-surface font-medium">비공개 보안 등급</label>
+<div class="grid grid-cols-2 gap-space-xs p-1 rounded-lg bg-surface-container">
+<button class="flex items-center justify-center gap-space-xs py-space-sm rounded-md bg-surface-container-high text-on-surface font-label-md text-label-md font-medium shadow-sm" type="button">
+<span class="material-symbols-outlined text-primary text-[16px]">lock</span>
+<span>최고 보안 (기본)</span>
+</button>
+<button class="flex items-center justify-center gap-space-xs py-space-sm rounded-md hover:bg-surface-container-high/60 text-on-surface-variant font-label-md text-label-md transition-colors" type="button">
+<span class="material-symbols-outlined text-[16px]">public</span>
+<span>전시실 공개</span>
+</button>
+</div>
+<p class="font-label-sm text-label-sm text-on-surface-variant px-1 mt-0.5">
+              * 최고 보안 등급은 오직 PIN 마스터 키 입력 시에만 뷰어에서 해제됩니다.
+            </p>
+</div>
+<!-- Field 5: Metadata Switches -->
+<div class="flex flex-col gap-space-sm pt-space-xs">
+<div class="flex items-center justify-between py-1">
+<div class="flex flex-col">
+<span class="font-body-md text-body-md text-on-surface font-medium">EXIF 원본 메타데이터 보존</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">조리개, 셔터, 렌즈 및 GPS 정보 유지</span>
+</div>
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-10 h-6 bg-surface-container-highest peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-surface peer-checked:bg-primary-container after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-on-surface after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
+</label>
+</div>
+<div class="flex items-center justify-between py-1">
+<div class="flex flex-col">
+<span class="font-body-md text-body-md text-on-surface font-medium">무손실 WebP 자동 파생본 생성</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">모바일 고속 감상용 4K 캐시</span>
+</div>
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-10 h-6 bg-surface-container-highest peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-surface peer-checked:bg-primary-container after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-on-surface after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
+</label>
+</div>
+</div>
+</div>
+<!-- Sticky Commit / Confirm Action Footer in Inspector -->
+<div class="flex flex-col gap-space-xs pt-space-md border-t border-surface-container-high/40">
+<button class="w-full flex items-center justify-center gap-space-xs py-space-sm px-space-md rounded-lg bg-primary-container hover:bg-primary-container/90 text-on-primary font-body-md text-body-md font-medium transition-colors shadow-lg shadow-primary-container/20" type="button">
+<span class="material-symbols-outlined text-[18px]">archive</span>
+<span>총 3장 앨범에 등록 완료 (업로드 진행 중 1/3)</span>
+</button>
+<div class="grid grid-cols-2 gap-space-xs mt-1">
+<button class="py-space-sm rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface font-body-md text-body-md transition-colors text-center" type="button">
+              임시 저장
+            </button>
+<button class="py-space-sm rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface font-body-md text-body-md transition-colors text-center" type="button">
+              취소
+            </button>
+</div>
+</div>
+</div>
+<!-- Security / Encryption Guarantee Footnote -->
+<div class="rounded-xl bg-surface-container-low/60 p-space-md flex items-start gap-space-sm">
+<span class="material-symbols-outlined text-primary text-[20px] shrink-0 mt-0.5">shield</span>
+<div class="flex flex-col gap-0.5">
+<span class="font-label-md text-label-md text-on-surface font-medium">엔드투엔드 무결성 보장</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">
+            업로드되는 모든 사진은 클라이언트 단에서 AES-256 암호화된 후 수장고에 분산 분할 저장됩니다. 외부 열람이 철저히 차단됩니다.
+          </span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<script>
+  function handleSimulatePaste() {
+    const dropzone = document.getElementById('dropzone');
+    if (!dropzone) return;
+    
+    // Quick micro-interaction feedback for user
+    dropzone.classList.add('ring-2', 'ring-primary-container', 'bg-surface-container-low');
+    setTimeout(() => {
+      dropzone.classList.remove('ring-2', 'ring-primary-container', 'bg-surface-container-low');
+    }, 600);
+  }
+
+  // Support real window paste notification
+  window.addEventListener('paste', (e) => {
+    handleSimulatePaste();
+  });
+</script></main></div></body></html>

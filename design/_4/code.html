@@ -1,0 +1,160 @@
+<!DOCTYPE html><html class="dark" lang="ko"><head><meta charset="utf-8"><meta content="width=device-width, initial-scale=1.0" name="viewport"><meta content="web_blank" name="shell-type"><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&amp;display=swap" rel="stylesheet"><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config={"darkMode":"class","theme":{"extend":{"colors":{"primary":"#adc6ff","surface-container-highest":"#353437","on-secondary-fixed-variant":"#003ea8","inverse-on-surface":"#313032","secondary":"#b4c5ff","outline-variant":"#424754","on-tertiary-container":"#461f00","on-primary-fixed":"#001a42","tertiary":"#ffb786","on-surface":"#e5e1e4","tertiary-fixed":"#ffdcc6","surface-container-low":"#1c1b1d","on-primary-container":"#00285d","on-error":"#690005","tertiary-fixed-dim":"#ffb786","on-surface-variant":"#c2c6d6","background":"#131315","on-secondary":"#002a78","secondary-fixed-dim":"#b4c5ff","inverse-surface":"#e5e1e4","surface-container-high":"#2a2a2c","primary-fixed":"#d8e2ff","primary-fixed-dim":"#adc6ff","primary-container":"#4d8eff","surface-container-lowest":"#0e0e10","on-primary-fixed-variant":"#004395","on-error-container":"#ffdad6","inverse-primary":"#005ac2","on-secondary-container":"#cdd7ff","surface-bright":"#39393b","surface-dim":"#131315","surface-tint":"#adc6ff","on-tertiary-fixed":"#311400","secondary-container":"#0053db","on-tertiary":"#502400","tertiary-container":"#df7412","surface-variant":"#353437","on-primary":"#002e6a","on-secondary-fixed":"#00174b","error-container":"#93000a","surface-container":"#201f22","on-tertiary-fixed-variant":"#723600","on-background":"#e5e1e4","outline":"#8c909f","error":"#ffb4ab","secondary-fixed":"#dbe1ff","surface":"#131315"},"borderRadius":{"DEFAULT":"0.25rem","lg":"0.5rem","xl":"0.75rem","full":"9999px"},"spacing":{"gutter":"0.25rem","space-lg":"1.5rem","margin":"0rem","margin-page":"2rem","space-xl":"3rem","space-md":"1rem","gutter-loose":"1.5rem","space-sm":"0.5rem","space-xs":"0.25rem"},"fontFamily":{"headline-sm":["Geist"],"body-lg":["Geist"],"headline-lg-mobile":["Geist"],"display-hero-mobile":["Geist"],"headline-md":["Geist"],"headline-lg":["Geist"],"label-sm":["Geist"],"body-md":["Geist"],"display-hero":["Geist"],"label-md":["Geist"]},"fontSize":{"headline-sm":["18px",{"lineHeight":"26px","letterSpacing":"-0.01em","fontWeight":"500"}],"body-lg":["16px",{"lineHeight":"26px","letterSpacing":"0em","fontWeight":"400"}],"headline-lg-mobile":["26px",{"lineHeight":"34px","letterSpacing":"-0.01em","fontWeight":"400"}],"display-hero-mobile":["36px",{"lineHeight":"44px","letterSpacing":"-0.02em","fontWeight":"300"}],"headline-md":["24px",{"lineHeight":"32px","letterSpacing":"-0.015em","fontWeight":"400"}],"headline-lg":["36px",{"lineHeight":"44px","letterSpacing":"-0.02em","fontWeight":"400"}],"label-sm":["10px",{"lineHeight":"14px","letterSpacing":"0.08em","fontWeight":"500"}],"body-md":["14px",{"lineHeight":"22px","letterSpacing":"0.005em","fontWeight":"400"}],"display-hero":["56px",{"lineHeight":"64px","letterSpacing":"-0.03em","fontWeight":"300"}],"label-md":["12px",{"lineHeight":"16px","letterSpacing":"0.04em","fontWeight":"500"}]}}}};</script></head><body class="bg-surface text-on-surface antialiased selection:bg-primary-container selection:text-on-primary-container"><main class="w-full min-h-screen flex items-center justify-center bg-surface"><div class="flex flex-col w-full">
+<div class="relative w-full min-h-[92vh] flex flex-col justify-between items-center px-4 sm:px-6 py-8 sm:py-12 bg-surface-container-lowest overflow-hidden select-none">
+<div class="absolute inset-0 pointer-events-none opacity-40 bg-[radial-gradient(circle_at_50%_42%,rgba(77,142,255,0.06),transparent_65%)]"></div>
+<header class="w-full max-w-5xl flex items-center justify-between text-on-surface-variant z-10"><div class="flex items-center gap-2"><span class="inline-block w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span></div><button aria-label="화면 숨김" class="group flex items-center justify-center w-8 h-8 rounded-full bg-surface-container hover:bg-surface-container-high transition-colors" id="quickMaskBtn" type="button"><span class="material-symbols-outlined text-[16px] text-outline group-hover:text-primary transition-colors">visibility_off</span></button></header>
+<main class="w-full max-w-[460px] my-auto py-10 z-10 flex flex-col items-center">
+<div class="relative mb-8 flex items-center justify-center">
+<div class="w-16 h-16 rounded-full bg-surface-container flex items-center justify-center shadow-inner">
+<span class="material-symbols-outlined text-[28px] text-primary transition-transform duration-300" id="lockGlyph">lock</span>
+</div>
+<div class="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-surface-container-high flex items-center justify-center">
+<span class="material-symbols-outlined text-[12px] text-primary">verified_user</span>
+</div>
+</div>
+<div class="text-center mb-8"><h1 class="font-headline-lg text-headline-lg text-on-surface font-light tracking-tight">비밀앨범</h1></div>
+<div class="w-full p-6 sm:p-7 rounded-lg bg-surface-container shadow-2xl relative">
+<form class="flex flex-col gap-5" id="vaultUnlockForm" onsubmit="event.preventDefault(); handleUnlock();">
+<div class="flex flex-col gap-2">
+
+<div class="relative flex items-center">
+<input autocomplete="current-password" class="w-full h-12 px-4 pr-12 rounded bg-surface-container-lowest text-on-surface font-body-lg text-body-lg placeholder:text-outline/60 focus:outline-none focus:ring-1 focus:ring-primary-container transition-all" id="vaultKeyInput" inputmode="text" placeholder="비밀번호" required="" type="password">
+<button aria-label="비밀번호 표시 토글" class="absolute right-3 p-1.5 text-outline hover:text-on-surface transition-colors flex items-center justify-center" id="toggleMaskBtn" tabindex="-1" type="button">
+<span class="material-symbols-outlined text-[20px]" id="toggleMaskIcon">visibility</span>
+</button>
+</div>
+</div>
+<div class="hidden flex items-start gap-2 p-3 rounded bg-surface-container-high transition-opacity" id="alertFeedback">
+<span class="material-symbols-outlined text-[18px] text-error mt-0.5" id="feedbackIcon">error</span>
+<span class="font-label-md text-label-md text-on-surface leading-snug" id="feedbackText"></span>
+</div>
+<button class="relative w-full h-11 px-6 rounded bg-primary-container hover:bg-secondary-container active:scale-[0.99] text-on-primary font-headline-sm text-body-md flex items-center justify-center gap-2 transition-all font-medium" id="unlockSubmitBtn" type="submit">
+<span class="material-symbols-outlined text-[18px]">lock_open</span>
+<span class="">잠금 해제</span>
+</button>
+</form>
+
+</div>
+
+</main>
+<footer class="w-full max-w-5xl flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left z-10 pt-4"><div class="w-full text-center text-outline/60 font-label-sm text-label-sm tracking-widest uppercase">© MONOGRAPH ARCHIVE</div></footer>
+<div class="fixed inset-0 bg-surface-container-lowest z-50 hidden flex-col items-center justify-center p-6 text-center select-none cursor-pointer" id="blankMaskLayer">
+<div class="w-12 h-12 rounded-full bg-surface-container flex items-center justify-center mb-4">
+<span class="material-symbols-outlined text-[24px] text-outline">security</span>
+</div>
+<p class="font-headline-sm text-headline-sm text-on-surface font-light mb-1">프라이버시 블라인드 활성화</p>
+<p class="font-label-md text-label-md text-outline">임의 키를 누르거나 화면을 클릭하여 복귀합니다.</p>
+</div>
+</div>
+<script>
+    (function initSecurityLockScreen() {
+      const form = document.getElementById('vaultUnlockForm');
+      const keyInput = document.getElementById('vaultKeyInput');
+      const toggleMaskBtn = document.getElementById('toggleMaskBtn');
+      const toggleMaskIcon = document.getElementById('toggleMaskIcon');
+      const lockGlyph = document.getElementById('lockGlyph');
+      const feedback = document.getElementById('alertFeedback');
+      const feedbackText = document.getElementById('feedbackText');
+      const feedbackIcon = feedback ? document.getElementById('feedbackIcon') : null;
+      const maskLayer = document.getElementById('blankMaskLayer');
+      const quickMaskBtn = document.getElementById('quickMaskBtn');
+      const noticeTrigger = document.getElementById('authNoticeTrigger');
+
+      let isMaskActive = false;
+
+      function toggleBlind() {
+        isMaskActive = !isMaskActive;
+        if (maskLayer) {
+          if (isMaskActive) {
+            maskLayer.classList.remove('hidden');
+            maskLayer.classList.add('flex');
+          } else {
+            maskLayer.classList.add('hidden');
+            maskLayer.classList.remove('flex');
+          }
+        }
+      }
+
+      window.addEventListener('keydown', (e) => {
+        if (e.shiftKey && (e.key === 'H' || e.key === 'h')) {
+          e.preventDefault();
+          toggleBlind();
+        } else if (isMaskActive) {
+          toggleBlind();
+        }
+      });
+
+      if (quickMaskBtn) {
+        quickMaskBtn.addEventListener('click', () => toggleBlind());
+      }
+
+      if (maskLayer) {
+        maskLayer.addEventListener('click', () => {
+          if (isMaskActive) toggleBlind();
+        });
+      }
+
+      if (toggleMaskBtn && keyInput && toggleMaskIcon) {
+        toggleMaskBtn.addEventListener('click', () => {
+          const isPass = keyInput.type === 'password';
+          keyInput.type = isPass ? 'text' : 'password';
+          toggleMaskIcon.textContent = isPass ? 'visibility_off' : 'visibility';
+        });
+      }
+
+      if (noticeTrigger) {
+        noticeTrigger.addEventListener('click', () => {
+          showFeedback('로컬 보관소 세션은 무활동 5분 경과 후 자동 락업됩니다.', false);
+        });
+      }
+
+      function showFeedback(msg, isError) {
+        if (!feedback || !feedbackText) return;
+        feedbackText.textContent = msg;
+        if (feedbackIcon) {
+          feedbackIcon.textContent = isError ? 'error' : 'verified';
+          feedbackIcon.className = 'material-symbols-outlined text-[18px] ' + (isError ? 'text-error' : 'text-primary');
+        }
+        feedback.classList.remove('hidden');
+      }
+
+      window.handleUnlock = function() {
+        const val = keyInput ? keyInput.value.trim() : '';
+        if (!val) {
+          showFeedback('접속 비밀번호를 입력해 주십시오.', true);
+          keyInput?.focus();
+          return;
+        }
+
+        if (lockGlyph) {
+          lockGlyph.classList.add('animate-bounce');
+        }
+
+        setTimeout(() => {
+          if (val === '0000' || val.length >= 4) {
+            showFeedback('인증 확인됨. 갤러리 보안 영역을 복호화합니다...', false);
+            if (lockGlyph) {
+              lockGlyph.classList.remove('animate-bounce');
+              lockGlyph.textContent = 'lock_open';
+            }
+            setTimeout(() => {
+              if (feedbackText) feedbackText.textContent = '아카이브 세션 로드 중...';
+            }, 600);
+          } else {
+            if (lockGlyph) {
+              lockGlyph.classList.remove('animate-bounce');
+            }
+            showFeedback('비밀번호가 올바르지 않습니다. 보안 로그에 시도가 기록됩니다.', true);
+            if (keyInput) {
+              keyInput.value = '';
+              keyInput.focus();
+            }
+          }
+        }, 400);
+      };
+    })();
+  </script>
+</div></main>
+
+</body></html>
