@@ -236,8 +236,12 @@ kbd { font-family: var(--font-mono); font-size: 12px; padding: 2px 6px; border: 
 .feature-tall .photo-frame { aspect-ratio: 4 / 5; }
 .feature-card .caption { font-size: 13px; color: var(--foreground); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .feature-label { display: block; margin-bottom: 8px; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted-foreground); }
-.pause-band { position: relative; background: var(--viewer-background); }
-.pause-band .photo-frame { height: 72vh; }
+.pause-band { position: relative; overflow: hidden; background: var(--viewer-background); }
+/* 사용자 요청: 높이 50% (72vh → 36vh). 사진 전체를 보여 주고 여백은 흐린 같은 사진으로 채운다. */
+.pause-band .photo-link { position: relative; z-index: 1; display: block; }
+.pause-band .photo-link .photo-frame { height: 36vh; min-height: 220px; background: transparent; }
+.pause-band .photo-link .photo-frame img { object-fit: contain; }
+.pause-band .hero-backdrop .photo-frame { position: absolute; inset: 0; }
 .pause-band .caption { position: absolute; right: 16px; bottom: 12px; font-size: 12px; color: var(--viewer-muted); }
 .model-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
 @media (min-width: 768px) { .model-row { grid-template-columns: repeat(4, minmax(0, 220px)); } }

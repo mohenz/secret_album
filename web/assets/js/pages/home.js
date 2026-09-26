@@ -59,7 +59,8 @@ async function load() {
   if (data.pause_photo) {
     const p = data.pause_photo;
     blocks.push(el('section', { class: 'pause-band', 'aria-label': 'Favorite photo' },
-      el('a', { class: 'photo-link', href: `/pages/album.html?id=${p.album_id}&photo=${p.id}`, 'aria-label': 'View favorite photo' }, photoFrame(p.id, { color: p.color, photo: p, sizes: '100vw', variant: 'large' }))));
+      el('div', { class: 'hero-backdrop', 'aria-hidden': 'true' }, photoFrame(p.id, { color: p.color, variant: 'thumb', alt: '' })),
+      el('a', { class: 'photo-link', href: `/pages/album.html?id=${p.album_id}&photo=${p.id}`, 'aria-label': 'View favorite photo' }, photoFrame(p.id, { color: p.color, photo: p, sizes: '(min-width: 1024px) 50vw, 100vw', variant: 'large' }))));
   }
   if (data.models.length) {
     blocks.push(el('section', { class: 'home-section plain', 'aria-labelledby': 'models-title' },
