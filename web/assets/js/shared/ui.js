@@ -48,6 +48,43 @@ export function iconButton(name, ariaLabel, onclick, className = '') {
   return el('button', { type: 'button', class: `btn btn-icon ${className}`.trim(), 'aria-label': ariaLabel, title: ariaLabel, onclick }, icon(name, 'icon-20'));
 }
 
+// ------------------------------------------------ Tooltip: 아이콘 버튼에 마우스를 올리거나 키보드로 포커스하면 기능 설명을 띄운다.
+// 화면 가장자리에서 잘리지 않도록 body에 고정 위치로 그리고, 버튼 이름(aria-label)은 같은 문구로 둔다.
+let tipNode = null;
+let tipTimer = 0;
+function hideTip() {
+  clearTimeout(tipTimer);
+  if (tipNode) tipNode.hidden = true;
+}
+function showTip(target, text) {
+  tipNode ??= document.body.appendChild(el('div', { class: 'tooltip', 'aria-hidden': 'true', hidden: true }));
+  tipNode.textContent = text;
+  tipNode.hidden = false;
+  const r = target.getBoundingClientRect();
+  const w = tipNode.offsetWidth;
+  const h = tipNode.offsetHeight;
+  const left = Math.min(Math.max(8, r.left + r.width / 2 - w / 2), innerWidth - w - 8);
+  const above = r.top - h - 8;
+  tipNode.style.left = `${left}px`;
+  tipNode.style.top = `${above >= 8 ? above : r.bottom + 8}px`;
+}
+export function withTooltip(target, text) {
+  target.setAttribute('aria-label', text);
+  target.addEventListener('pointerenter', (event) => {
+    if (event.pointerType === 'touch') return;
+    clearTimeout(tipTimer);
+    tipTimer = setTimeout(() => showTip(target, text), 250);
+  });
+  target.addEventListener('focus', () => { if (target.matches(':focus-visible')) showTip(target, text); });
+  for (const type of ['pointerleave', 'blur', 'click']) target.addEventListener(type, hideTip);
+  target.addEventListener('keydown', (event) => { if (event.key === 'Escape' && tipNode && !tipNode.hidden) { hideTip(); event.stopPropagation(); } });
+  return target;
+}
+
+export function tipButton(iconName, text, onclick, { type = 'button', className = '' } = {}) {
+  return withTooltip(el('button', { type, class: `btn btn-icon tip-btn ${className}`.trim(), onclick }, icon(iconName, 'icon-20')), text);
+}
+
 export function setBusy(buttonEl, busy, busyLabel) {
   if (!buttonEl) return;
   if (busy) {

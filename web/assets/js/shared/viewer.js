@@ -2,7 +2,7 @@
 import PhotoSwipeLightbox from '/assets/vendor/photoswipe/photoswipe-lightbox.esm.min.js';
 import { api, mediaUrl, srcsetFor } from './api.js';
 import { addLockGuard, setShield } from './privacy.js';
-import { el, formatBytes, formatDateTime, icon, joinMeta, showDialog, toast, toastError } from './ui.js';
+import { el, formatBytes, formatDateTime, icon, joinMeta, showDialog, tipButton, toast, toastError } from './ui.js';
 
 const SLIDESHOW_KEY = 'album-slideshow';
 
@@ -194,7 +194,7 @@ export function openViewer(config) {
     const tags = el('input', { class: 'input', id: tagsId, value: detail.tags.join(', '), autocomplete: 'off', spellcheck: 'false' });
     const caption = el('textarea', { class: 'textarea', id: captionId, maxlength: '2000' });
     caption.value = detail.caption || '';
-    const save = el('button', { type: 'submit', class: 'btn btn-primary' }, 'Save changes');
+    const save = tipButton('check', 'Save changes', undefined, { type: 'submit', className: 'tip-primary' });
     const form = el('form', { class: 'form-grid', onsubmit: async (event) => {
       event.preventDefault();
       save.disabled = true;
@@ -206,11 +206,11 @@ export function openViewer(config) {
     } },
     el('div', { class: 'field' }, el('label', { class: 'label', for: tagsId }, 'Tags'), tags, el('p', { class: 'hint' }, 'Separate with commas, e.g. outdoor, black and white')),
     el('div', { class: 'field' }, el('label', { class: 'label', for: captionId }, 'Note'), caption),
-    save,
-    el('div', { class: 'row-actions' },
-      el('button', { type: 'button', class: 'btn btn-outline', onclick: () => ownerAction('set_album_cover', 'Set as album cover.') }, 'Set as album cover'),
-      el('button', { type: 'button', class: 'btn btn-outline', onclick: () => ownerAction('set_model_cover', 'Set as model cover.') }, 'Set as model cover'),
-      el('button', { type: 'button', class: 'btn btn-outline', onclick: () => ownerAction('trash', 'Moved to trash.') }, icon('trash-2'), 'Move to trash')));
+    el('div', { class: 'info-actions', role: 'group', 'aria-label': 'Photo actions' },
+      save,
+      tipButton('image', 'Set as album cover', () => ownerAction('set_album_cover', 'Set as album cover.')),
+      tipButton('circle-user', 'Set as model cover', () => ownerAction('set_model_cover', 'Set as model cover.')),
+      tipButton('trash-2', 'Move to trash', () => ownerAction('trash', 'Moved to trash.'), { className: 'tip-danger' })));
     return el('div', {}, el('div', { class: 'divider', role: 'separator' }), form);
   }
 
