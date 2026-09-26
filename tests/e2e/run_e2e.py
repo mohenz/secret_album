@@ -376,6 +376,46 @@ def run() -> int:
         check("Studio 전체 보기: 통계 4개", len(stats) == 4, ", ".join(stats))
         check("Studio 전체 보기: 최근 업로드", page.locator(".recent-strip a").count() > 0)
 
+        # 13-2. Studio: 모델 관리(상세·모델/앨범 추가·앨범 선택 삭제·모델 선택 삭제)
+        page.goto(f"{BASE}/manage/models.html")
+        page.wait_for_selector(".model-row")
+        page.wait_for_selector("#detail-name")
+        check("모델 관리: 목록과 첫 모델 상세", page.locator("#detail-name").inner_text() == "Seoyun Han" and page.locator(".model-album").count() == 1)
+        page.click(".studio-actions button:has-text('Add model')")
+        page.fill("dialog input[name=name]", "Temp Model")
+        page.click("dialog button[type=submit]")
+        page.wait_for_function("document.getElementById('detail-name')?.textContent === 'Temp Model'")
+        check("모델 관리: 모델 추가 → 상세 표시", "id=" in page.url)
+        for title in ["Temp Album A", "Temp Album B"]:
+            page.click("#model-detail button:has-text('New album')")
+            page.fill("dialog input[name=title]", title)
+            page.click("dialog button[type=submit]")
+            page.wait_for_selector("dialog", state="detached")
+            page.wait_for_selector(f".model-album:has-text('{title}')")
+        check("모델 관리: 앨범 2개 추가", page.locator(".model-album").count() == 2)
+        page.check("#albums-select-all")
+        check("모델 관리: 앨범 전체 선택", "2 selected" in page.locator("[aria-label='Album selection']").inner_text())
+        page.click("[aria-label='Album selection'] button:has-text('Delete albums')")
+        page.click("dialog button:has-text('Move 2 albums to trash')")
+        page.wait_for_selector("text=No albums yet.")
+        check("모델 관리: 선택한 앨범 삭제", page.locator(".model-album").count() == 0)
+        page.locator(".model-row:has-text('Temp Model') .pick input").check()
+        page.click("[aria-label='Model selection'] button:has-text('Delete')")
+        page.click("dialog button:has-text('Move model to trash')")
+        page.wait_for_selector(".model-row:has-text('Temp Model')", state="detached")
+        check("모델 관리: 선택한 모델 삭제", page.locator(".model-row").count() == 1)
+        page.goto(f"{BASE}/manage/trash.html")
+        page.wait_for_selector(".trash-item")
+        trash_text = page.locator(".trash-list").inner_text()
+        check("모델·앨범이 휴지통에 들어감", "Temp Model" in trash_text and "Temp Album A" in trash_text, trash_text[:120])
+        page.check("#trash-select-all")
+        for item in page.locator(".trash-item").all():
+            if "Temp" not in item.inner_text():
+                item.locator("input").uncheck()
+        page.click("button:has-text('Delete selected')")
+        page.click("dialog .btn-destructive")
+        page.wait_for_selector("text=Deleted permanently.")
+
         # 14. 모바일(390px)
         mobile = browser.new_context(viewport={"width": 390, "height": 844}, locale="ko-KR", has_touch=True, is_mobile=True, bypass_csp=True, storage_state=context.storage_state())
         m = mobile.new_page()
@@ -383,7 +423,7 @@ def run() -> int:
         for path, name, ready in [("/", "홈(모바일)", ".hero img"), (album_url.replace(BASE, ""), "앨범(모바일)", ".flow-item"), ("/pages/albums.html", "앨범 목록(모바일)", ".cover-card"),
                                   ("/pages/models.html", "모델 목록(모바일)", ".model-card"), ("/manage/upload.html", "업로드(모바일)", ".quick-dropzone"),
                                   ("/manage/trash.html", "휴지통(모바일)", ".trash-item"),
-                                  ("/manage/photos.html", "사진 관리(모바일)", ".lib-card"), ("/manage/index.html", "전체 보기(모바일)", ".stat-grid"), ("/manage/settings.html", "설정(모바일)", "#s-security")]:
+                                  ("/manage/photos.html", "사진 관리(모바일)", ".lib-card"), ("/manage/models.html", "모델 관리(모바일)", ".model-row"), ("/manage/index.html", "전체 보기(모바일)", ".stat-grid"), ("/manage/settings.html", "설정(모바일)", "#s-security")]:
             m.goto(BASE + path)
             m.wait_for_selector(ready)
             m.wait_for_timeout(300)

@@ -148,6 +148,7 @@ function renderQuickResults(data) {
 const STUDIO_NAV = [
   ['overview', '/manage/index.html', 'Archive overview', 'layout-grid'],
   ['photos', '/manage/photos.html', 'Photo library', 'images'],
+  ['models', '/manage/models.html', 'Models', 'circle-user'],
   ['upload', '/manage/upload.html', 'Quick upload', 'upload'],
   ['trash', '/manage/trash.html', 'Trash', 'trash-2'],
   ['settings', '/manage/settings.html', 'Settings', 'settings'],
