@@ -35,10 +35,12 @@ function Get-GiteaCredential {
     # git clone 때 저장된 자격 증명을 먼저 쓰고, 없으면 묻는다.
     $uri = [Uri]$GiteaUrl
     $query = "protocol=$($uri.Scheme)`nhost=$($uri.Authority)`n`n"
+    $env:GIT_TERMINAL_PROMPT = '0'; $env:GCM_INTERACTIVE = 'never'   # 저장된 값이 없으면 창을 띄우지 않고 넘어간다
     $filled = $query | git credential fill 2>$null
     $user = ($filled | Where-Object { $_ -like 'username=*' }) -replace '^username=', ''
     $pass = ($filled | Where-Object { $_ -like 'password=*' }) -replace '^password=', ''
     if ($user -and $pass) { return [pscredential]::new($user, (ConvertTo-SecureString $pass -AsPlainText -Force)) }
+    if (-not [Environment]::UserInteractive -or $env:SECRET_ALBUM_NONINTERACTIVE) { throw "Gitea 자격 증명이 없습니다. git clone을 로그인해서 한 번 실행하거나 -Bundle <zip 경로>를 지정해 주세요." }
     return Get-Credential -UserName 'admin' -Message "Gitea($GiteaUrl) 계정"
 }
 

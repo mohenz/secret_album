@@ -2,7 +2,7 @@
 
 - 기준일: 2026-09-26
 - 대상: 내부망 Windows 운영 서버 (시스템 설계서 v0.2 12장 기준, cinetube와 같은 운영 방식)
-- 함께 볼 문서: `docs/system_design.md`, `docs/other_pc_setup_guide.md`
+- 함께 볼 문서: `docs/system_design.md`, `docs/other_pc_setup_guide.md`, `docs/server_agent_guide.md`(서버에서 AI 에이전트가 작업할 때)
 
 ## 1. 구성 요약
 
@@ -38,7 +38,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File E:\workspace\secret_album\de
 
 | 인자 | 용도 |
 |---|---|
-| `-ServiceUser "SERVERlbumsvc"` | 감시 예약 작업 실행 계정 (기본: 현재 사용자) |
+| `-ServiceUser "SERVERlbumsvc"` | 감시 예약 작업 실행 계정 (기본: 현재 사용자, 암호를 묻는다). `SYSTEM`이면 암호 없이 등록 |
 | `-Bundle D:\secret_album_data_*.zip` | 이전 zip을 직접 지정 (USB 등으로 옮긴 경우) |
 | `-NoData` | 데이터 없이 새로 시작하고 소유자 계정을 만든다 |
 | `-GiteaRepoRoot <gitea-repositories 경로>` | Gitea 저장소 폴더 자동 탐색이 실패할 때 |
